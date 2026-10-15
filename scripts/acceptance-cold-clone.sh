@@ -2,7 +2,7 @@
 set -euo pipefail
 
 step="starting"
-tmp_parent="$(mktemp -d "${TMPDIR:-/tmp}/rat-stack-acceptance.XXXXXX")"
+tmp_parent="$(mktemp -d "${TMPDIR:-/tmp}/savour-acceptance.XXXXXX")"
 tmp="$tmp_parent/clone"
 server_pid=""
 
@@ -47,31 +47,26 @@ if ! pnpm install --frozen-lockfile; then
   fail "pnpm install --frozen-lockfile failed"
 fi
 
-step="fetch pinned source objects"
-if ! pnpm sources:fetch; then
-  fail "pnpm sources:fetch failed"
-fi
-
 step="rename workspace"
 acceptance_scope="@acceptance-$((RANDOM * 32768 + RANDOM))"
 replace_refs() {
   local file="$1"
   if sed --version >/dev/null 2>&1; then
-    sed -i "s|@rat-stack/|${acceptance_scope}/|g" "$file"
+    sed -i "s|@savour/|${acceptance_scope}/|g" "$file"
   else
-    sed -i '' "s|@rat-stack/|${acceptance_scope}/|g" "$file"
+    sed -i '' "s|@savour/|${acceptance_scope}/|g" "$file"
   fi
 }
 while IFS= read -r -d '' file; do
   replace_refs "$file"
 done < <(
-  rg --hidden --files-with-matches --null -F '@rat-stack/' \
+  rg --hidden --files-with-matches --null -F '@savour/' \
     -g '!.git/**' -g '!node_modules/**' -g '!.agent_sources/**' . || true
 )
-remaining="$(rg --hidden --files-with-matches -F '@rat-stack/' \
+remaining="$(rg --hidden --files-with-matches -F '@savour/' \
   -g '!.git/**' -g '!node_modules/**' -g '!.agent_sources/**' . || true)"
 if [[ -n "$remaining" ]]; then
-  printf 'remaining @rat-stack/ references:\n%s\n' "$remaining" >&2
+  printf 'remaining @savour/ references:\n%s\n' "$remaining" >&2
   fail "workspace rename left old package references"
 fi
 printf 'renamed workspace scope to %s\n' "$acceptance_scope"
@@ -84,13 +79,6 @@ fi
 step="build script type dependencies"
 if ! pnpm --filter "${acceptance_scope}/capability" build; then
   fail "capability build failed before type-aware formatting"
-fi
-
-# A longer or shorter scope changes line lengths, so the formatter rewraps.
-# README's Make it yours path tells a clone to run the same command.
-step="generate worker content"
-if ! pnpm --filter "${acceptance_scope}/site" generate; then
-  fail "site content generation failed after the workspace rename"
 fi
 
 step="post-rename format"
@@ -119,39 +107,28 @@ EOF
 if ! node --input-type=module <<'NODE'
 import { readFile, writeFile } from "node:fs/promises";
 
-const inspectPath = "packages/core/src/inspect-file.ts";
-const inspect = await readFile(inspectPath, "utf8");
-const imported = inspect.replace(
-  'import { runInspectMachine } from "./inspect-machine.js";',
-  'import { acceptanceProbe } from "./acceptance-probe.js";\nimport { runInspectMachine } from "./inspect-machine.js";'
+const indexPath = "packages/core/src/index.ts";
+const index = await readFile(indexPath, "utf8");
+const imported = index.replace(
+  'import { health } from "./health-capabilities.js";',
+  'import { acceptanceProbe } from "./acceptance-probe.js";\nimport { health } from "./health-capabilities.js";'
 );
-if (imported === inspect) {
-  throw new Error("add-a-capability import text did not match inspect-file.ts");
+if (imported === index) {
+  throw new Error("add-a-capability import text did not match core/index.ts");
 }
 const registered = imported.replace(
   "export const capabilities = [",
   "export const capabilities = [acceptanceProbe, "
 );
 if (registered === imported) {
-  throw new Error("add-a-capability registration text did not match inspect-file.ts");
+  throw new Error("add-a-capability registration text did not match core/index.ts");
 }
-await writeFile(inspectPath, registered);
-
-const indexPath = "packages/core/src/index.ts";
-const index = await readFile(indexPath, "utf8");
-const exported = index.replace(
-  'export { capabilities, inspectFile } from "./inspect-file.js";',
-  'export { acceptanceProbe } from "./acceptance-probe.js";\n\nexport { capabilities, inspectFile } from "./inspect-file.js";'
-);
-if (exported === index) {
-  throw new Error("add-a-capability export text did not match core/index.ts");
-}
-await writeFile(indexPath, exported);
+await writeFile(indexPath, registered);
 NODE
 then
   fail "add-a-capability instructions did not match the scaffold"
 fi
-printf 'registered acceptanceProbe in packages/core/src/inspect-file.ts\n'
+printf 'registered acceptanceProbe in packages/core/src/index.ts\n'
 
 step="format acceptance probe"
 if ! pnpm fix; then

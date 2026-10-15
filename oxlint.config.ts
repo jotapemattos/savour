@@ -1,33 +1,5 @@
-import foldkitRecommended from "@foldkit/oxlint-plugin/recommended.json" with { type: "json" };
 import { defineConfig } from "oxlint";
 import core from "ultracite/oxlint/core";
-
-const foldkitScope = (pattern: string) => `apps/web/src/${pattern}`;
-
-const foldkitSeverity = ([rule, severity]: readonly [string, string]) => {
-  if (severity === "error" || severity === "off") {
-    return [rule, severity] as const;
-  }
-
-  throw new Error(
-    `@foldkit/oxlint-plugin/recommended.json sets ${rule} to ${severity}. Map that severity in oxlint.config.ts before bumping the plugin.`
-  );
-};
-
-const foldkitRules = (rules: Readonly<Record<string, string>>) =>
-  Object.fromEntries(Object.entries(rules).map(foldkitSeverity));
-
-const foldkitOverrides = [
-  {
-    files: [foldkitScope("**/*.ts")],
-    rules: foldkitRules(foldkitRecommended.rules),
-  },
-  ...foldkitRecommended.overrides.map(({ excludeFiles, files, rules }) => ({
-    excludeFiles: excludeFiles?.map(foldkitScope),
-    files: files.map(foldkitScope),
-    rules: foldkitRules(rules),
-  })),
-];
 
 export default defineConfig({
   extends: [core],
@@ -44,7 +16,6 @@ export default defineConfig({
     "tools/oxlint/anti-slop/**",
   ],
   jsPlugins: [
-    { name: "foldkit", specifier: "@foldkit/oxlint-plugin" },
     "./scripts/oxlint-plugin-xstate-effect.ts",
     "./scripts/oxlint-plugin-effect-tests.ts",
     "./scripts/oxlint-plugin-no-comments.ts",
@@ -66,7 +37,6 @@ export default defineConfig({
     typeAware: true,
   },
   overrides: [
-    ...foldkitOverrides,
     {
       files: [
         "apps/*/src/features/**",
@@ -82,16 +52,6 @@ export default defineConfig({
       files: ["apps/*/src/features/**", "apps/*/src/dev/features/**"],
       rules: {
         "rat-stack-boundaries/no-feature-transport": "error",
-      },
-    },
-    {
-      files: [
-        "apps/site/scripts/content-lib.ts",
-        "apps/site/scripts/generate-content.ts",
-        "apps/site/scripts/wiki-prose.ts",
-      ],
-      rules: {
-        "rat-stack-patterns/audited-content-regex": "error",
       },
     },
   ],

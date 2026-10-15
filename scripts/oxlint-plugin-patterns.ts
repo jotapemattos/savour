@@ -1173,7 +1173,7 @@ const watchEffectActors = defineRule({
     },
     messages: {
       unwatched:
-        'Call watchActor("<machine>", actor) from @rat-stack/capability/actor-watch after createEffectActor. It is a no-op until devtools provides a watcher, and without it rat_list_actors cannot see this machine.',
+        'Call watchActor("<machine>", actor) from @savour/capability/actor-watch after createEffectActor. It is a no-op until devtools provides a watcher, and without it rat_list_actors cannot see this machine.',
     },
     type: "suggestion",
   },

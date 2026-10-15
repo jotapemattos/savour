@@ -75,7 +75,6 @@ if ! git ls-remote --exit-code --refs https://github.com/statelyai/xstate.git "r
 fi
 ALCHEMY_VERSION="$(pin apps/infra/package.json alchemy)"
 BETTER_AUTH_VERSION="$(pin packages/auth/package.json better-auth)"
-FOLDKIT_VERSION="$(pin apps/web/package.json foldkit)"
 
 clone_source Effect-TS effect https://github.com/Effect-TS/effect.git "effect@${EFFECT_VERSION}" \
   "Effect v4 monorepo matching packages/core effect@${EFFECT_VERSION}."
@@ -94,7 +93,5 @@ clone_source alchemy-run alchemy https://github.com/alchemy-run/alchemy.git "v${
   "Alchemy IaC matching apps/infra alchemy@${ALCHEMY_VERSION}. Read alchemy/src/cloudflare/."
 clone_source better-auth better-auth https://github.com/better-auth/better-auth.git "better-auth@${BETTER_AUTH_VERSION}" \
   "Better Auth matching packages/auth better-auth@${BETTER_AUTH_VERSION}; Alchemy's wrapper lives in alchemy-run/alchemy packages/better-auth."
-clone_source foldkit foldkit https://github.com/foldkit/foldkit.git "foldkit@${FOLDKIT_VERSION}" \
-  "Foldkit UI matching apps/web foldkit@${FOLDKIT_VERSION}."
 
 echo "done — agent sources under ${PREFIX}"
