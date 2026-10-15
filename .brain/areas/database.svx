@@ -1,0 +1,71 @@
+---
+title: "Database"
+description: "One interface records action runs and their outcomes in either Cloudflare D1 or Postgres through Hyperdrive."
+plain: "RunLog records action runs and their outcomes through one service, stored in D1 or Postgres through Hyperdrive."
+diagram: |-
+  caller
+    │ RunLog
+    │ record, listRecent
+    ▼
+  DatabaseVendor
+  ├ D1
+  └ Postgres + Hyperdrive
+    tables + migrations
+group: system
+terms:
+  - "run log"
+  - "database vendor"
+sources:
+  - url: https://github.com/joelhooks/rat-stack/blob/main/packages/database/src/run-log.ts
+    title: "rat-stack/packages/database/src/run-log.ts at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "RunLog service; used for the storage boundary and typed failures."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/packages/database/src/vendor.ts
+    title: "rat-stack/packages/database/src/vendor.ts at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Vendor choice; used for D1 and Hyperdrive Postgres selection."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/packages/database/test/run-log.test.ts
+    title: "rat-stack/packages/database/test/run-log.test.ts at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Shared storage tests; used for the behavior checked on both vendors."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/packages/database/test/migration-paths.test.ts
+    title: "rat-stack/packages/database/test/migration-paths.test.ts at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Migration tests; used to verify loading outside the package."
+    accessed: "2026-10-01"
+---
+
+## What it does
+
+The database [cartridge](/lore/cartridges), `packages/database`, is a package for one job, with its implementation and required infrastructure.
+It gives callers one service, `RunLog`. A service is a named interface for one job.
+
+`RunLog` records a capability run with its outcome and lists a person's recent runs.
+A capability is one named action with shared value definitions and a server-side implementation.
+
+`DatabaseVendor` chooses where rows are stored: Cloudflare D1, or Postgres through Hyperdrive.
+
+D1 is Cloudflare's SQL database. Hyperdrive connects Workers to a Postgres database through pooled connections.
+
+The chosen implementation includes its resources, Drizzle table definitions, and database migrations.
+Drizzle defines and queries tables in TypeScript. Migrations change the database structure.
+
+Effect describes work with typed failures and required services. Schema describes accepted values and their runtime checks.
+
+The database's one caller is [auth](/systems/auth), which today runs only in the web app's dev server. The deployed ratstack.sh Worker does not use it. A clone that needs people and history starts here.
+
+## The standard
+
+- Callers use `RunLog` and never see SQL, Drizzle, or the chosen implementation.
+- Choosing an implementation is one `DatabaseVendor` value.
+- Every input passes its Schema check before it reaches storage. Bad input fails as `InvalidDatabaseInput`, and a storage failure fails as `DatabaseError`.
+- Run ids use UUIDv7, a time-ordered identifier format. Times come from the Effect clock, so tests control both.
+- The same tests pass on both implementations.
+- Migrations load when the process starts outside the package.
+
+## How to check
+
+`pnpm --filter @rat-stack/database test` runs the `RunLog` tests twice, against D1 on local SQLite and against Postgres on PGlite. They cover both outcome variants, filtering by person, limits, ordering by time then id, and rejected limits. A second test loads the migrations from outside the package.

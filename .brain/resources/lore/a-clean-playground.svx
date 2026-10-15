@@ -1,0 +1,49 @@
+---
+title: "A clean playground"
+description: "rat-stack does real work with packages that stay easy to add and remove."
+plain: "Everything here does real work, and you can add or remove any piece without breaking the rest."
+diagram: |-
+  remove one package
+    │
+    ▼
+  other imports unchanged
+  bindings stay contained
+  full gate passes
+group: idea
+terms:
+  - "clean playground"
+  - "house rule"
+sources:
+  - url: https://github.com/joelhooks/rat-stack/blob/main/VISION.md
+    title: "rat-stack/VISION.md at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Product vision; used for the cartridge test and rejection of toy examples."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/.brain/projects/layer-startups.svx
+    title: "rat-stack/.brain/projects/layer-startups.svx at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Layer-startup decision; used for the self-contained construction boundary."
+    accessed: "2026-10-01"
+---
+
+Every package must do useful work and stay easy to add and remove.
+This is the house rule behind the "clean playground" name.
+A cartridge is a package for one job, with the resources that job needs.
+It must stay self-contained and easy to delete.
+
+Everything built here must do real work. `VISION.md` rejects toy examples that exist only to demonstrate a pattern.
+
+rat-stack is a reference that other projects copy and maintain as source.
+
+Its example CLI inspects real files. Its [database cartridge](/systems/database) owns a `RunLog` service and Layers for two database implementations.
+
+A service is a named interface for a job. A Layer describes how to build services and supply their dependencies.
+The website's search and read [capabilities](/systems/capabilities), named actions with shared contracts and handlers, serve the public repo. Each piece does real work.
+
+The clean-playground test asks what remains when one package is removed. Removal must leave other packages' import paths unchanged, keep resource connections contained, and pass all required checks, tests, and builds.
+
+`VISION.md` describes the cartridge test. `AGENTS.md` assigns each package one job and sets the required checks.
+
+[Analytics](/systems/analytics) supplies another working package, with an explicit removal checklist. [Interest signup](/systems/interest) keeps delivery in an [adapter package](/lore/hexagonal-architecture) outside core. One-line infrastructure removal remains unproven for that adapter.
+
+See [cartridges](/lore/cartridges) for the infrastructure example and [the fence](/lore/the-fence), the compiler checks, lint rules, tests, and hooks that enforce these rules.

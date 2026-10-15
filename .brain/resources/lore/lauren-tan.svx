@@ -1,0 +1,20 @@
+---
+title: "Lauren Tan"
+description: "Lauren Tan describes verification and agent-oriented architecture in her public talk about Dune."
+plain: "Lauren Tan builds trust in agent work through verification, skills and an agent-friendly codebase."
+group: person
+terms:
+  - "Lauren Tan"
+sources:
+  - url: https://x.com/poteto/status/2102050467505430555
+    title: "lauren on X: \"here's how i shipped 2,500 PRs last month to production this was originally supposed to be for Cursor Compile in London. i couldn't make it since i was livestreaming for Grok @Bot Galaxy so i'm making it available for free here on X! watch it on 2x speed, i talk slowly\" / X"
+    publisher: "Lauren Tan"
+    note: "Dune talk; used for verification, skills, and agent-oriented process boundaries."
+    accessed: "2026-10-01"
+---
+
+# Lauren Tan
+
+Lauren Tan describes verification, skills, and an agent-friendly codebase as ways to build trust in agent work. [Watch from 06:45](https://video.twimg.com/amplify_video/2101938030122868736/vid/avc1/3442x2160/BQlPlAZCEVPDemv1.mp4#t=405).
+
+Her Dune framework organizes an application around named features, entrypoints, clients, hosts, and typed interfaces between those parts. [Watch from 19:01](https://video.twimg.com/amplify_video/2101938030122868736/vid/avc1/3442x2160/BQlPlAZCEVPDemv1.mp4#t=1141).

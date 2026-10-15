@@ -1,0 +1,21 @@
+---
+title: "Cause & Effect 10: Software engineering in the age of AI"
+description: "John De Goes, Michael Arnaldi, and Johannes Schickling discuss engineering judgment as code gets cheaper."
+plain: "As code gets cheap, the speakers say system shape, verification and control of complexity matter more."
+group: source
+speaker: "John De Goes, Michael Arnaldi, and Johannes Schickling"
+date: 2026-08-07
+url: https://youtu.be/irmz5X3c7Do
+sources:
+  - url: https://youtu.be/irmz5X3c7Do
+    title: "Software Engineering in the Age of AI || John De Goes || Cause & Effect 10 - YouTube"
+    publisher: "John De Goes, Michael Arnaldi, and Johannes Schickling"
+    note: "Recording; used for engineering judgment and executable quality rules as code gets cheaper."
+    accessed: "2026-10-01"
+---
+
+# Cause & Effect 10: Software engineering in the age of AI
+
+The speakers argue that coding agents change the value of software engineering without removing programming languages or experienced judgment. Cheap code makes building blocks, system structure, verification, and control of complexity more important. [07:47](https://youtu.be/irmz5X3c7Do?t=467) [30:06](https://youtu.be/irmz5X3c7Do?t=1806) [44:51](https://youtu.be/irmz5X3c7Do?t=2691)
+
+They connect Effect and ZIO's properties needed in running applications to agent-written work, and discuss making quality rules executable through types, linting, and review. [50:14](https://youtu.be/irmz5X3c7Do?t=3014) [52:26](https://youtu.be/irmz5X3c7Do?t=3146) [58:23](https://youtu.be/irmz5X3c7Do?t=3503)

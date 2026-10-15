@@ -1,0 +1,123 @@
+---
+title: "One program can replace several tool calls"
+description: "Code mode combines typed content calls inside one bounded execute request."
+plain: "Code mode runs one small program that chains typed content calls inside a single bounded request."
+diagram: |-
+  POST /api/execute
+    search → read → backlinks
+    │ each call decoded
+    ▼
+  one result
+  sandbox: no network,
+  100 ms CPU, 5 subrequests
+group: idea
+updated: "2026-10-06"
+terms:
+  - "codemode"
+  - "code mode"
+sources:
+  - url: https://x.com/joelhooks/status/2106018556496457773
+    title: "Joel Hooks on code mode"
+    publisher: "Primary source"
+    note: "Joel Hooks on code mode"
+    accessed: "2026-10-02"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/apps/site/src/capabilities/index.ts
+    title: "apps/site/src/capabilities/index.ts"
+    publisher: "GitHub"
+    note: "apps/site/src/capabilities/index.ts"
+    accessed: "2026-10-02"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/packages/capability/src/to-code-mode.ts
+    title: "packages/capability/src/to-code-mode.ts"
+    publisher: "GitHub"
+    note: "packages/capability/src/to-code-mode.ts"
+    accessed: "2026-10-02"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/apps/site/src/sandbox-worker-loader.ts
+    title: "apps/site/src/sandbox-worker-loader.ts"
+    publisher: "GitHub"
+    note: "apps/site/src/sandbox-worker-loader.ts"
+    accessed: "2026-10-02"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/apps/site/src/app.ts
+    title: "apps/site/src/app.ts"
+    publisher: "GitHub"
+    note: "apps/site/src/app.ts"
+    accessed: "2026-10-02"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/apps/site/src/worker.ts
+    title: "Worker sandbox composition"
+    publisher: "GitHub"
+    note: "Provides the Worker Loader with sandboxLimits."
+    accessed: "2026-10-02"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/apps/site/src/rate-limits.ts
+    title: "Native execute rate limits"
+    publisher: "GitHub"
+    note: "Six per IP and 300 global per minute."
+    accessed: "2026-10-02"
+  - url: https://ratstack.sh/llms.txt#run-code-one-program-instead-of-several-calls
+    title: "Code mode HTTP endpoint documentation"
+    publisher: "ratstack.sh"
+    note: "Documents POST /api/execute. The program below was observed on 2026-10-02."
+    accessed: "2026-10-02"
+---
+
+A capability is a named action with a typed contract and a handler.
+Code mode combines calls to those actions in one program.
+MCP (Model Context Protocol) lets an agent discover and call tools.
+
+ratstack.sh already offers code mode:
+
+- `POST /api/execute`.
+- The MCP `execute` tool.
+
+One request runs an async function body that combines content calls. [Joel's reply](https://x.com/joelhooks/status/2106018556496457773) asks for this alongside CLI, API, and MCP.
+
+## A live program
+
+This program runs against the live HTTP endpoint.
+
+The callable definitions are in [`apps/mischief/src/capabilities/index.ts` at `445b1a20b51a5492f8e586daeb9306e8011b7673`, lines 34–45](https://github.com/joelhooks/rat-stack/blob/445b1a20b51a5492f8e586daeb9306e8011b7673/apps/mischief/src/capabilities/index.ts#L34-L45). We wrote this read-only request.
+
+```js
+const found = await tools.search({ query: "cartridges", limit: 1 });
+const page = await tools.read({ id: found.matches[0].id });
+const graph = await tools.backlinks({ slug: page.routePath.split("/").at(-1) });
+return { title: page.title, id: page.id, links: graph.backlinks.length };
+```
+
+The program passes the search result directly to read and reduces the graph result before returning it.
+
+`POST /api/execute` returned this response on 2026-10-02:
+
+```json
+{"logs":[],"result":{"title":"Cartridges","id":"ratstack://lore/cartridges","links":31}}
+```
+
+Three typed calls use one outer request. This run measures neither latency nor token savings.
+
+## The sandbox preserves the boundary
+
+[`apps/site/src/capabilities/index.ts`](https://github.com/joelhooks/rat-stack/blob/main/apps/site/src/capabilities/index.ts) builds `toExecuteCapability(contentCapabilities)`. That list contains search, read, backlinks, neighbors, mentions, and path.
+
+`joinInterest` belongs to the outer API/MCP registry. It does not belong to the sandbox's callable list.
+
+[`packages/capability/src/to-code-mode.ts`](https://github.com/joelhooks/rat-stack/blob/main/packages/capability/src/to-code-mode.ts) builds the catalog and TypeScript declarations. Every call from sandbox code returns to application code that validates input and runs the handler.
+That code encodes the output or declared failure.
+
+[`sandbox-worker-loader.ts`](https://github.com/joelhooks/rat-stack/blob/main/apps/site/src/sandbox-worker-loader.ts) runs a fresh Dynamic Worker, a Worker loaded to execute sandbox code, with:
+
+- No outbound network.
+- A 100 ms CPU limit.
+- Five subrequests.
+- A ten-second timeout.
+
+Imports, exports, and fetch are unavailable.
+
+The [HTTP and MCP rate-limit checks](https://github.com/joelhooks/rat-stack/blob/main/apps/site/src/app.ts) use [native rate limits](https://github.com/joelhooks/rat-stack/blob/main/apps/site/src/rate-limits.ts):
+
+- Six execute calls per IP per minute.
+- 300 execute calls total per minute.
+- Separate counters in each Cloudflare location.
+
+Combining calls does not waive these limits.
+
+Use the [agent guide](/llms.txt) for the endpoint and call format. See [MCP](/lore/mcp-is-another-surface) for the tool transport.
+
+See [how we do it with Effect](/lore/how-we-do-it-with-effect) for the whole path.

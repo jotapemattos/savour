@@ -1,0 +1,88 @@
+{
+  "name": "@rat-stack/core",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "dist",
+    "src"
+  ],
+  "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./flags": {
+      "types": "./src/flags.ts",
+      "import": "./dist/flags.js",
+      "default": "./dist/flags.js"
+    },
+    "./flag-control": {
+      "types": "./src/flag-control.ts",
+      "import": "./dist/flag-control.js",
+      "default": "./dist/flag-control.js"
+    },
+    "./flag-write-capabilities": {
+      "types": "./src/flag-write-capabilities.ts",
+      "import": "./dist/flag-write-capabilities.js",
+      "default": "./dist/flag-write-capabilities.js"
+    },
+    "./flag-capabilities": {
+      "types": "./src/flag-capabilities.ts",
+      "import": "./dist/flag-capabilities.js",
+      "default": "./dist/flag-capabilities.js"
+    },
+    "./learn": {
+      "types": "./src/learn.ts",
+      "import": "./dist/learn.js",
+      "default": "./dist/learn.js"
+    },
+    "./contracts": {
+      "types": "./src/contracts.ts",
+      "import": "./dist/contracts.js",
+      "default": "./dist/contracts.js"
+    },
+    "./intake": {
+      "types": "./src/intake.ts",
+      "import": "./dist/intake.js",
+      "default": "./dist/intake.js"
+    },
+    "./join-interest": {
+      "types": "./src/join-interest.ts",
+      "import": "./dist/join-interest.js",
+      "default": "./dist/join-interest.js"
+    },
+    "./request-geo": {
+      "types": "./src/request-geo.ts",
+      "import": "./dist/request-geo.js",
+      "default": "./dist/request-geo.js"
+    },
+    "./interest": {
+      "types": "./src/interest.ts",
+      "import": "./dist/interest.js",
+      "default": "./dist/interest.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json",
+    "check": "pnpm run typecheck",
+    "pretest": "pnpm run --silent build"
+  },
+  "dependencies": {
+    "@effect/platform-node": "4.0.0",
+    "@rat-stack/capability": "workspace:*",
+    "@xstate/effect": "0.1.0-alpha.7",
+    "effect": "4.0.0",
+    "xstate": "6.0.0-alpha.65"
+  },
+  "devDependencies": {
+    "@effect/vitest": "4.0.0",
+    "@types/node": "24.13.6",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
+  }
+}

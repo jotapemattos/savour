@@ -1,0 +1,30 @@
+---
+title: "The plan model"
+description: "Sam Goodwin describes Alchemy's plan outputs as a way to inspect infrastructure before deployment."
+plain: "Sam Goodwin describes Alchemy's plan model: output values connect resources, and you see the plan before deploy."
+group: concept
+terms:
+  - "plan model"
+  - "infrastructure plan"
+sources:
+  - url: https://youtu.be/MtKHzAH6uXM?t=1560
+    title: "Sam Goodwin - Alchemy - YouTube"
+    publisher: "Sam Goodwin"
+    note: "Output-value discussion; used for connecting resources before deployment."
+    accessed: "2026-10-01"
+  - url: https://youtu.be/YEn4A7XxgF4?t=742
+    title: "#116 Infrastructure as Effects with Sam Goodwin - YouTube"
+    publisher: "Sam Goodwin"
+    note: "Pure-program discussion; used for a reviewable plan and concrete deployment."
+    accessed: "2026-10-01"
+---
+
+# The plan model
+
+A plan model describes infrastructure changes before they are applied.
+
+Sam contrasts Alchemy's earlier await-based model with a plan model. He says Alchemy v2 adopted output values that can connect to other resources before deployment. The engine can show the plan before those values become readable at deployment. [Sam Goodwin on Alchemy, 26:00](https://youtu.be/MtKHzAH6uXM?t=1560).
+
+He also connects Effect purity with a reviewable plan and a concrete deployment result. [Happy Path 116, 12:22](https://youtu.be/YEn4A7XxgF4?t=742).
+
+See [Sam Goodwin on Alchemy](/lore/devtools-fm-sam-goodwin-alchemy) and [Happy Path 116](/lore/happy-path-116-infrastructure-as-effects-sam-goodwin).

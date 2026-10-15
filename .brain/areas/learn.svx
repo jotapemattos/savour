@@ -1,0 +1,228 @@
+---
+title: "Learn mode presents concepts at useful depths"
+description: "An agent presents source-derived concepts during real work and keeps learning events in a private local log."
+plain: "The build turns public pages into a concept deck, and an agent presents cards while progress stays in a local log."
+diagram: |-
+  lore, systems, skills
+    │ build
+    ▼
+  deck of cards
+    plain, snippet, diagram
+    │ learnNext
+    ▼
+  one card during work
+    │
+  private local log
+group: system
+terms:
+  - "learn mode"
+  - "concept deck"
+  - "learning progress"
+sources:
+  - url: https://github.com/better-auth/better-auth/tree/better-auth%401.6.2/packages/better-auth/src/plugins/device-authorization
+    title: "Pinned device authorization plugin"
+    publisher: "GitHub better-auth/better-auth"
+    note: "Device codes, cookie-authenticated approval, provider lifetime, and polling interval. The application disables its full-session token exchange."
+    accessed: "2026-10-08"
+  - url: https://github.com/joelhooks/rat-stack/blob/553cb64b93e8b2b15f4215ef36786b14d3754949/packages/learn/src/local-store.ts
+    title: "Local progress adapter"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Validated append-only events, writer locking, and rebuildable projections."
+    accessed: "2026-10-07"
+  - url: https://github.com/joelhooks/rat-stack/blob/553cb64b93e8b2b15f4215ef36786b14d3754949/apps/cli/src/command.ts
+    title: "Local CLI command projection"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Plain CLI commands use the local learning capabilities."
+    accessed: "2026-10-07"
+  - url: https://github.com/joelhooks/rat-stack/tree/cec3fcc34c976f007d1157af756c89a951306194/packages/learn
+    title: "Learning cartridge"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Source-derived cards, depth policy, lifecycle, and learning capabilities."
+    accessed: "2026-10-07"
+  - url: https://github.com/joelhooks/rat-stack/blob/cec3fcc34c976f007d1157af756c89a951306194/packages/core/src/learn-model.ts
+    title: "Learning schemas"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Versioned concept cards, events, and compact progress."
+    accessed: "2026-10-07"
+  - url: https://github.com/joelhooks/rat-stack/blob/cec3fcc34c976f007d1157af756c89a951306194/packages/core/src/learn-contracts.ts
+    title: "Learning contracts"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Deck reads, card reads, selection, and explicit event recording."
+    accessed: "2026-10-07"
+---
+
+## What it does
+
+Learn mode explains the technology and principles used in real work. [The learn skill](/skills/learn) controls when the agent presents an explanation. The operator enables the mode and can stop it at any time.
+
+The build derives a concept deck from public lore, system pages, and skills. Cards preserve page titles, summaries, terms, references, and links. Explicit prerequisite metadata supplies prerequisite ids.
+
+A page that is not a concept, such as an announcement, sets `learn: false` in its frontmatter. The build leaves it out of the deck and logs its id.
+
+A card can also teach with three optional fields:
+
+| Field | Source | Content |
+| --- | --- | --- |
+| `plain` | Page frontmatter | One line in plain words, shown before the claim. |
+| `snippet` | `.brain/data/learn-cards/<id>.ts` | The smallest idiomatic TypeScript for the idea. |
+| `diagram` | Page frontmatter | Plain text, at most 30 columns and 12 rows of one-column characters. |
+
+A capability is one named action with shared value definitions and a server-side implementation.
+Four capabilities serve the deck and learning events. Two local capabilities serve display preferences:
+
+| Capability | Job |
+| --- | --- |
+| `learnDeck` | List the public cards. |
+| `learnCard` | Read one card at a requested depth. |
+| `learnNext` | Select explanations for concepts in play. |
+| `learnRecord` | Record an explicit learning event. |
+| `learnPreferences` | Read local display preferences. Local only. |
+| `learnSetPreferences` | Change local display preferences. Local only. |
+
+`learnNext` and `learnRecord` treat omitted progress as empty version 1 progress.
+
+XState owns the learning lifecycle as a state machine: named states and the events that permit movement between them.
+Effect describes the work with typed failures and required services. A service is a named interface for one job.
+
+Selection follows deck order when context is absent. A public context term selects its owner and resolves unintroduced prerequisites first. A shown walkthrough introduces a prerequisite. Dismissed prerequisites count as satisfied; dismissed cards stay silent.
+
+- New concepts receive a walkthrough.
+- Introduced concepts receive a line, or a paragraph after seven days.
+- Familiar concepts receive a line after seven days.
+- Fluent concepts stay silent until asked or after ninety days of inactivity.
+- Dismissed concepts stay silent.
+
+The command-line interface (CLI) and MCP tools use a local progress adapter, an implementation that connects learning operations to local files.
+MCP means Model Context Protocol. Its stdio connection uses the process's standard input and output to carry tool calls.
+
+The learning cartridge provides the adapter through `@rat-stack/learn/local`.
+A cartridge is a package for one job, with its implementation and required infrastructure.
+The CLI supplies filesystem access and the default directory.
+
+Public HTTP and MCP calls operate on supplied progress. The public server stores no progress. The default local directory is `~/.rat-learn/`.
+
+| Local file | Role |
+| --- | --- |
+| `log.jsonl` | Authoritative append-only learning events. |
+| `cards.jsonl` | Rebuildable concept progress. |
+| `tasks.jsonl` | Rebuildable concept ids and presentation depths. |
+| `README.md` | Store shape and recovery instructions. |
+| `preferences.json` | Display width, visual style, and snippet length. A missing file means narrow inline text with full snippets. |
+
+### Feedback sign-in
+
+Feedback is separate from learning progress. A person signs in through Better Auth and approves an agent's code on their phone.
+The agent receives a credential that permits `learnFeedback` only. The database stores feedback against the approving person.
+
+| Capability | Job |
+| --- | --- |
+| `learnFeedbackStart` | Return a short code, verification URL, lifetime, and polling interval. |
+| `learnFeedbackPoll` | Report pending, approval, denial, expiry, or polling too fast. |
+| `learnFeedback` | Validate the credential and card, then store the agreed feedback. |
+
+The phone page is `/learn/approve`. It shows the code and requires sign-in before approval.
+The stock `/auth/device/token` endpoint is disabled because it issues a full sign-in session.
+
+Feedback credentials are separate signed values. They cannot authenticate a normal Better Auth session.
+
+The device machine reflects the provider's stored approval facts. Its declared Effect actors inspect the grant and issue the credential.
+The credential machine checks signature, audience, expiry, and the current grant before it returns an author.
+
+Learn owns the `FeedbackAuthor` [port](/lore/hexagonal-architecture). Mischief provides its auth adapter inside each request.
+Learn imports no auth provider.
+
+`AUTH_ENABLED` defaults to false. Off removes sign-in routes, the phone page, feedback HTTP operations, and feedback MCP tools.
+The D1 database and signing-secret foundation stay declared to keep state and resource ownership.
+On adds Better Auth table migrations and the Worker bindings that use them.
+
+Feedback writes are not replay-idempotent. Each successful call stores a new row.
+An uncertain write needs a storage check before another attempt.
+
+## The standard
+
+- The operator opts in. The skill stops when the operator opts out.
+- Feedback requires a signed-in person's approval. Denial and expiry issue no credential.
+- A feedback credential grants no authority to any other capability.
+- Feedback credentials never enter local progress files, feedback text, or published examples.
+- Questions require separate opt-in. The agent asks at most one check-in per long session.
+- Selection does not record a presentation. The agent records `shown` after presenting.
+- Events contain concept ids and learning metadata. They contain no code, paths, names, or prompts.
+- Public deck requests contain no local progress.
+- The local log remains the authority. The adapter validates it before every operation.
+- Identical events append once. A writer lock protects each operation.
+- Derived copies can be replaced. An incomplete source log fails without writes.
+- Cards preserve source text. The build accumulates reference and prerequisite errors.
+- Every card needs a public reference. Only `learn: false` removes a page from the deck, and the build logs each one.
+- The build compiles every snippet with the real `tsc` and the Effect diagnostics. It collects every failure before it stops.
+- A missing snippet or diagram is a coverage warning. The build reports the counts.
+- `rat-stack-patterns/learn-snippet-idiom` keeps snippets on the service idiom: operations, a namespaced key, `static layer` with `Service.of`, and `Effect.provide` at the edge.
+- Preferences stay on the machine. No request carries them.
+- Property tests check depth and merge. A generated history model checks events and elapsed time.
+
+Effect Schema describes accepted values and their runtime checks.
+The event schema defines the available observations:
+
+```ts repo=rat-stack path=packages/core/src/learn-model.ts at=cec3fcc34c976f007d1157af756c89a951306194 lines=33-47 title="Explicit learning events"
+
+```
+
+## How to check
+
+Build the CLI and start its local stdio MCP:
+
+```sh
+pnpm turbo run build --filter=@rat-stack/cli
+node apps/cli/dist/cli.js mcp --devtools
+```
+
+Through an MCP client:
+
+1. Call `learnDeck` and choose `lore.effect-basics`.
+2. Call `learnNext` with that id and timestamp 100. Omit progress.
+3. Confirm the returned depth is `walkthrough` in a fresh store.
+4. Call `learnRecord` with a version 1 `shown` event at 100 and depth `walkthrough`.
+5. Call `learnNext` at 101. Omit progress again.
+6. Confirm the returned depth is `line`. The local log supplies the progress.
+7. Inspect `rat_list_calls` for three successful learning calls.
+
+Use a fresh test directory through `RAT_LEARN_DIRECTORY`. These timestamps are test fixtures. Use current Unix timestamps in milliseconds for real presentations.
+
+Without MCP, use the same local adapter through the CLI:
+
+```sh
+node apps/cli/dist/cli.js learnNext \
+  --context '{"at":100,"ids":["lore.effect-basics"]}'
+node apps/cli/dist/cli.js learnRecord \
+  --event '{"at":100,"depth":"walkthrough","id":"lore.effect-basics","kind":"shown","version":1}'
+node apps/cli/dist/cli.js learnNext \
+  --context '{"at":101,"ids":["lore.effect-basics"]}'
+node apps/cli/dist/cli.js learnPreferences
+```
+
+Confirm `learnPreferences` prints narrow inline text in a fresh directory. Check one event in `log.jsonl`. Repeat the record command and confirm that the event count stays one. Confirm outbound deck requests contain only an empty JSON body.
+
+With feedback sign-in enabled in a test composition:
+
+1. Call `learnFeedbackStart` and open its verification URL while signed out.
+2. Sign in on the phone, check the code, and approve feedback access.
+3. Poll with `learnFeedbackPoll`, respecting its interval.
+4. Call `learnFeedback` with a real public card id and the agreed text.
+5. Confirm the returned id and the stored person's id.
+6. Check that the credential cannot authenticate a normal session or authorize another capability.
+7. Repeat with denial and expiry. Confirm neither grants feedback access.
+8. Disable the flag. Confirm the routes, OpenAPI operations, and MCP tools are absent.
+
+The tests use memory auth for the HTTP seam. They do not establish deployed D1 health.
+The schema limits feedback to 2,000 characters, card ids to 200, and credentials to 4,096.
+These are initial input bounds, not measured traffic limits.
+
+Run the implementation checks:
+
+```sh
+pnpm --filter @rat-stack/learn test
+pnpm --filter @rat-stack/auth test
+pnpm --filter @rat-stack/site generate
+pnpm turbo run check test build --concurrency=1
+```
+
+Read `/_content/learn.json` after deployment. Confirm it includes this system page and the learn skill. Build success does not establish deployment health.

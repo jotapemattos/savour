@@ -1,0 +1,60 @@
+---
+title: "The fence"
+description: "The fence uses compiler checks, lint rules, and hooks to reject unsafe shortcuts."
+plain: "The fence makes the safe path enforceable, so bad shortcuts fail loudly and the rule beats the prose."
+diagram: |-
+  more durable
+    codebase
+    static analysis
+    rules
+    skills
+    style guides
+  less enforceable
+group: idea
+terms:
+  - "the fence"
+  - fence
+  - "trust ladder"
+  - "agent-friendly framework"
+sources:
+  - url: https://github.com/joelhooks/rat-stack/blob/main/AGENTS.md
+    title: "rat-stack/AGENTS.md at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Repo law; used for enforcing rules rather than relying on prose."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/oxlint.config.ts
+    title: "rat-stack/oxlint.config.ts at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Lint configuration; used for type-aware boundary and pattern checks."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/lefthook.yml
+    title: "rat-stack/lefthook.yml at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Commit hooks; used for the validation gate."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/.brain/resources/lint-rule-limits.svx
+    title: "rat-stack/.brain/resources/lint-rule-limits.svx at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Rule-limit note; used for the limits of syntax-based enforcement."
+    accessed: "2026-10-01"
+---
+
+The fence is the compiler checks, lint rules, tests, and hooks that enforce project rules.
+
+“Cheating is uncomfortable” means the repo must stop bad shortcuts. Type-aware Oxlint checks project boundaries and patterns. Effect language-service diagnostics run through TypeScript. Lefthook runs checks before a commit, and harness hooks block `git … --no-verify`.
+
+If an enforced check and a paragraph disagree, follow the enforced rule and fix the paragraph.
+
+The pieces live in `oxlint.config.ts`, `scripts/oxlint-plugin-boundaries.ts`, `scripts/oxlint-plugin-patterns.ts`, `tsconfig.base.json`, `lefthook.yml`, and `scripts/vcs-command-policy.js`. `pnpm turbo run check test build` is the required validation command. Do not weaken a hook to get a green result.
+
+A fence has limits. The lint rules use syntax and known aliases; they do not resolve every dynamic import, package condition, or cross-file re-export. The public Brain note [Oxlint rule limits](/resources/lint-rule-limits) lists those cases.
+
+When lint misses a case, improve the rule or boundary. These rules cannot establish whole-program behavior.
+
+## Where to enforce a correction
+
+Lauren Tan describes five places to put a correction, from more durable to less enforceable: the codebase, static analysis, rules, skills, and style guides. She says to move a correction as high on that ladder as it can go. [Watch from 15:00](https://video.twimg.com/amplify_video/2101938030122868736/vid/avc1/3442x2160/BQlPlAZCEVPDemv1.mp4#t=900) [18:20](https://video.twimg.com/amplify_video/2101938030122868736/vid/avc1/3442x2160/BQlPlAZCEVPDemv1.mp4#t=1100).
+
+Her Dune talk describes an agent-oriented framework where each folder has an owner and process boundaries are visible in the code tree. She sums up the design goal as making the shortcut the right path. [Watch from 19:01](https://video.twimg.com/amplify_video/2101938030122868736/vid/avc1/3442x2160/BQlPlAZCEVPDemv1.mp4#t=1141) [27:45](https://video.twimg.com/amplify_video/2101938030122868736/vid/avc1/3442x2160/BQlPlAZCEVPDemv1.mp4#t=1665).
+
+See [Lauren Tan's talk](/lore/poteto-lauren-tan-2500-prs-dune) for the source and [no comments](/lore/no-comments) for one house rule the fence enforces. See [tests that earn their place](/lore/tests-that-earn-their-place) for the testing law.

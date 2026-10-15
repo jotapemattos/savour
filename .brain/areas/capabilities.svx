@@ -1,0 +1,142 @@
+---
+title: "Capabilities"
+description: "Named application actions exposed through generated interfaces share one definition and one server-side implementation."
+plain: "A capability is one named action: a contract and one server handler, projected to every interface."
+diagram: |-
+  defineContract
+    name, input, output,
+    failure, metadata
+    │ implement
+    ▼
+  one handler
+  ├ CLI
+  ├ HTTP
+  ├ MCP
+  ├ RPC
+  └ code mode
+group: system
+terms:
+  - "capability contract"
+  - "capability registry"
+sources:
+  - url: https://github.com/joelhooks/rat-stack/blob/main/packages/capability/src/contract.ts
+    title: "rat-stack/packages/capability/src/contract.ts at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Contract definition; used for schemas, annotations, and approval settings."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/packages/capability/src/implement.ts
+    title: "rat-stack/packages/capability/src/implement.ts at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Handler binding; used for schema validation and declared failures."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/apps/site/src/capabilities/index.ts
+    title: "rat-stack/apps/site/src/capabilities/index.ts at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Hosted registry; used to identify the capabilities served by ratstack.sh."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/apps/cli/src/surfaces.ts
+    title: "rat-stack/apps/cli/src/surfaces.ts at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "CLI composition; used to show the local projections."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/tree/main/packages/capability/test
+    title: "rat-stack/packages/capability/test at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Projection tests; used to check validation, approvals, and sandbox calls."
+    accessed: "2026-10-01"
+---
+
+## What it does
+
+A capability is one named action with a contract and a server-side handler.
+The contract declares the name, input, output, failure, and metadata. The handler implements the action on the server.
+
+Effect is a library for describing work with typed failures and required services.
+A service is a named interface for one job.
+Schema describes accepted values, their TypeScript types, and the rules for checking and converting them at runtime.
+
+`defineContract` declares input, output, and failure with Effect Schema.
+It sets metadata describing the action, such as whether it is read-only, and any approval requirements.
+`implement` connects the contract to one handler.
+
+A projection builds a callable interface from a capability.
+The projections in `packages/capability` provide:
+
+- A command line.
+- An HTTP API with OpenAPI, which describes its routes, inputs, outputs, and errors.
+- MCP tools. Model Context Protocol lets an agent discover and call tools.
+- RPC calls. Remote procedure call lets a client call a named server operation.
+- Code mode, which combines capability calls in one program inside a restricted environment.
+See [one capability, every surface](/lore/one-capability-every-surface) for why.
+
+ratstack.sh serves seven: `search`, `read`, `backlinks`, `neighbors`, `mentions`, `path`, and `execute`. The registry lives in `apps/site/src/capabilities/index.ts`. The local command line projects the core registry in `apps/cli/src/surfaces.ts`.
+
+## The standard
+
+- Application actions exposed through generated routes, tools, and commands come from capabilities. Static pages, discovery documents, result pages, and protocol routing are composed separately. `Rpc.make`, `RpcGroup.make`, `HttpApi*`, `Tool.make`, and `Toolkit.make` outside `packages/capability` fail lint (`rat-stack-boundaries/no-hand-rolled-surface`).
+- Input, output, and failure are Effect schemas. JSON Schema, OpenAPI, and the code-mode declarations are derived from them, never written by hand.
+- Invalid input is rejected before the handler runs.
+- A declared failure returns the declared error type. MCP returns it as a tool error.
+- A capability that needs approval adds an `Approval` requirement and an `ApprovalDenied` failure on every interface. Approval is denied by default. HTTP answers a denial with 403.
+- Browser code imports contracts only, never handlers (`rat-stack-boundaries/no-browser-server-imports`).
+- Code mode reaches only capabilities, through their schemas.
+
+## Code-mode discovery and execution
+
+Code mode derives tool declarations from capability schemas.
+The default discovery budget is 2,000 estimated tokens.
+The estimate uses four characters per token.
+
+Discovery selects the shortest declarations and gives each namespace a turn.
+Namespace summaries mark the selected tools as `COMPLETE` or `PARTIAL`.
+
+`catalogBudget` sets the budget.
+`declarations: "inline"` includes all declarations; `"search"` includes none.
+An explicit `catalogBudget` takes precedence over either setting.
+The declarations resource always contains the full catalog.
+
+Programs can call `tools.$codemode.search` to find declarations.
+An exact tool path returns only that tool.
+Other queries rank path segments, path substrings, descriptions, then input fields.
+
+`limit` and `offset` bound each page.
+`next` holds the next offset; `remaining` counts matching tools after this page.
+`total` keeps its meaning as the full catalog size.
+
+Execution returns `result`, `logs`, `diagnostic`, `toolCalls`, and `truncated`.
+Check `diagnostic` before using `result`.
+A declared tool failure retains its tag and a safe message.
+Parse errors, invalid data, timeouts, and program failures also return diagnostics.
+
+Host cancellation still interrupts execution.
+
+The HTTP execute response uses status 200 for execution diagnostics.
+Failure diagnostics have a null result.
+Consumers that parsed `SandboxError` bodies must read `diagnostic` instead.
+A health check must reject a non-null result when it expects failure.
+
+`toolCalls` lists admitted calls in dispatch order, including failed calls.
+`maxToolCalls` rejects extra calls before their handlers run.
+Both sandbox adapters run at most eight tool calls at once.
+`maxOutputBytes` bounds returned JSON and log content by UTF-8 bytes.
+
+Output cuts set `truncated` and keep the diagnostic and call history.
+The budget excludes diagnostic, call-history, and transport-envelope bytes.
+Both limits are optional; zero is a valid limit.
+
+Handlers keep the services captured when the program starts.
+Devtools records each handler's duration and outcome through the existing `CallWatch`.
+A downstream storage adapter owns its statement and row limits.
+
+## How to check
+
+- `curl -sS https://ratstack.sh/openapi.json | jq -r '.paths | keys[]'` lists one route per capability. The MCP `tools/list` request in the [agent guide](/llms.txt) returns the same seven names.
+- `pnpm --filter @rat-stack/capability test` covers input rejection before the handler and typed failures as tool errors. It checks approval denial as a 403 and a typed tool error, denial by default, and code-mode calls through capability schemas.
+- `pnpm lint` fails on any callable interface built outside `packages/capability`.
+- `pnpm --filter @rat-stack/capability exec vitest run test/catalog.test.ts test/sandbox-limits.test.ts test/sandbox-conformance.test.ts test/code-mode-context.test.ts` checks discovery, search pages, limits, and captured services.
+- `pnpm --filter @rat-stack/site exec vitest run test/code-mode-runtime.test.ts` checks the same diagnostics, limits, and concurrency in local workerd.
+- `pnpm --filter @rat-stack/devtools test` checks handler duration and failure recording during code-mode execution.
+
+## Removing an interface
+
+The README's Keep or cut table lists the files for "No HTTP", "No MCP", and "No code mode." Cutting MCP cuts code mode, because code mode is built on the MCP toolkit.

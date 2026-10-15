@@ -1,0 +1,33 @@
+---
+title: "Bindings"
+description: "Sam Goodwin describes bindings as the place where runtime permissions and configuration meet infrastructure."
+plain: "A binding gives a service its permission and its environment variable together."
+diagram: |-
+  binding = permission
+          + environment variable
+  methods used → least privilege
+group: concept
+terms:
+  - binding
+  - bindings
+sources:
+  - url: https://youtu.be/YEn4A7XxgF4?t=2229
+    title: "#116 Infrastructure as Effects with Sam Goodwin - YouTube"
+    publisher: "Sam Goodwin"
+    note: "Binding explanation; used for permissions and environment configuration."
+    accessed: "2026-10-01"
+  - url: https://youtu.be/fPSxB7ZgSJw?t=3496
+    title: "Alchemy, Infrastructure as Effects | Office Hours 27 🔥 - YouTube"
+    publisher: "Sam Goodwin"
+    note: "Policy derivation discussion; used for least privilege from application methods."
+    accessed: "2026-10-01"
+---
+
+# Bindings
+
+Sam says a binding includes both permissions and environment variables.
+A service's configuration and permissions can be declared together before the application runs. [Happy Path 116, 37:09](https://youtu.be/YEn4A7XxgF4?t=2229) [37:33](https://youtu.be/YEn4A7XxgF4?t=2253)
+
+He also describes deriving least-privilege policies: permissions limited to the methods an application uses. [Effect Office Hours 27, 58:16](https://youtu.be/fPSxB7ZgSJw?t=3496) [59:23](https://youtu.be/fPSxB7ZgSJw?t=3563).
+
+See [Happy Path 116](/lore/happy-path-116-infrastructure-as-effects-sam-goodwin) and [Effect Office Hours 27](/lore/effect-office-hours-27-alchemy-infrastructure-as-effects).

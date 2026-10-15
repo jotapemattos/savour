@@ -1,0 +1,28 @@
+---
+title: "Floor and ceiling"
+description: "Theo Browne argues that a model's ordinary reliability matters more than its peak on long agent runs."
+plain: "Theo says a model's ordinary reliability matters more than its best result when an agent works for hours."
+group: concept
+terms:
+  - "floor and ceiling"
+  - "model floor"
+sources:
+  - url: https://youtu.be/iBrAWpjXNxs?t=259
+    title: "Please stop using stupid models - YouTube"
+    publisher: "Theo Browne"
+    note: "Reliability argument; used to distinguish the ordinary floor from peak performance."
+    accessed: "2026-10-01"
+  - url: https://youtu.be/iBrAWpjXNxs?t=1359
+    title: "Please stop using stupid models - YouTube"
+    publisher: "Theo Browne"
+    note: "Failure-rate example; used for compounding errors over long agent runs."
+    accessed: "2026-10-01"
+---
+
+# Floor and ceiling
+
+Theo distinguishes a model's best performance from its ordinary reliability, which he calls the floor. He calls best performance the ceiling. He says the floor matters more when an agent must work through a long task. [04:19](https://youtu.be/iBrAWpjXNxs?t=259) [05:31](https://youtu.be/iBrAWpjXNxs?t=331).
+
+He illustrates how small failure rates across repeated time windows compound over a four-hour run. [22:39](https://youtu.be/iBrAWpjXNxs?t=1359) [23:19](https://youtu.be/iBrAWpjXNxs?t=1399).
+
+See [Theo Browne: Please stop using stupid models](/lore/theo-please-stop-using-stupid-models).

@@ -1,0 +1,22 @@
+---
+title: "Effect: Production-Grade TypeScript"
+description: "Michael Arnaldi presents Effect as a set of shared tools for production TypeScript."
+plain: "Michael Arnaldi says production software needs shared tools for dependencies, retries and telemetry, not one-off code."
+group: source
+speaker: "Michael Arnaldi"
+date: 2026-01-08
+url: https://youtu.be/apklpPEgZgw
+sources:
+  - url: https://youtu.be/apklpPEgZgw
+    title: "Michael Arnaldi - Effect: Production-Grade TypeScript - YouTube"
+    publisher: "Michael Arnaldi"
+    note: "Recording; used for shared primitives for production TypeScript."
+    accessed: "2026-10-01"
+---
+
+# Effect: Production-Grade TypeScript
+
+Michael defines production-grade software as a long-lived system that remains resilient, observable, testable, predictable, modular, and approachable. [03:25](https://youtu.be/apklpPEgZgw?t=205) [06:57](https://youtu.be/apklpPEgZgw?t=417)
+
+He contrasts shared tools for production applications with hidden dependencies and one-off retry logic.
+He also contrasts them with manually added logs, metrics, and traces, and discipline that does not scale. The talk demonstrates Effect with typed dependencies, fallback plans, tool errors, and traces. [09:27](https://youtu.be/apklpPEgZgw?t=567) [14:19](https://youtu.be/apklpPEgZgw?t=859) [25:48](https://youtu.be/apklpPEgZgw?t=1548)

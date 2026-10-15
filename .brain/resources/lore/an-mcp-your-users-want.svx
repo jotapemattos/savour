@@ -1,0 +1,53 @@
+---
+title: "An MCP your users want"
+description: "Rhys Sullivan's practical guide gives rat-stack a checklist for useful MCP tools."
+plain: "An MCP server should let agents do the jobs people already do in the product's dashboard."
+diagram: |-
+  dashboard actions  agree
+  code mode opt-in   agree
+  docs search        agree
+  deep links         gap
+  token toolsets     gap
+  OAuth              gap
+group: idea
+terms:
+  - "MCP your users want"
+  - "useful MCP tools"
+sources:
+  - url: https://x.com/RhysSullivan/status/2103280866084708510
+    title: "Rhys on X: \"Here's Rhys' practical guide to shipping an MCP your users want: - Your MCP should be able to do everything your dashboard can Yes including things like deleting resources. The way to make this practical inside of an agent while not having things be unsafe is to deep link them into yo… / X"
+    publisher: "Rhys Sullivan"
+    note: "Practical MCP guide; used to compare dashboard actions, docs search, deep links, and OAuth."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/apps/site/src/capabilities/index.ts
+    title: "rat-stack/apps/site/src/capabilities/index.ts at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Capability registry; used to check the hosted tool coverage."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/packages/capability/src/approval.ts
+    title: "rat-stack/packages/capability/src/approval.ts at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Approval service; used to check the safety boundary for actions."
+    accessed: "2026-10-01"
+  - url: https://github.com/joelhooks/rat-stack/blob/main/packages/auth/src/auth.ts
+    title: "rat-stack/packages/auth/src/auth.ts at main · joelhooks/rat-stack · GitHub"
+    publisher: "GitHub joelhooks/rat-stack"
+    note: "Auth service; used to distinguish current sign-in from MCP OAuth."
+    accessed: "2026-10-01"
+---
+
+[Rhys Sullivan's practical guide](https://x.com/RhysSullivan/status/2103280866084708510) starts with the jobs people already do in a product. It asks MCP authors to expose dashboard actions, keep code mode as a choice made by the agent's client, and provide documentation search. It also covers links to specific product actions, groups of tools, and OAuth authorization.
+OAuth lets a person authorize a client to access a service.
+
+The table compares his advice with rat-stack today. The gaps remain open; this page authorizes no changes.
+
+| Rhys's point | rat-stack today | Verdict |
+| --- | --- | --- |
+| Do what the dashboard can do. | Each interface uses the same contract and handler. The public site exposes `search` and `read`; the CLI projects registered capabilities too. | Agree |
+| Keep code mode out of the default MCP tool list. | CLI `mcp` uses plain tools; `--code-mode` opts into code mode. The hosted site's MCP includes `execute` because demonstrating the sandbox is the site's job. | Agree in the template; the hosted site differs |
+| Ship search for docs and skills. | The site's `search` and `read` capabilities cover public content. Lore pages are included in the searchable documentation. | Agree |
+| Add a deep link into the product. | No product-action deep-link tool appears in the hosted capability registry. | Gap |
+| Offer toolsets and permissions tied to the auth token. | Contracts can require approval, and `Approval` gates execution. The hosted MCP has no user-token toolsets; `auth.md` says it accepts no credentials. | Gap |
+| Let clients use OAuth; an API spec and Client ID Metadata Document (CIMD) OAuth cover most agents. | The auth cartridge supports Better Auth sessions for an app, but ratstack.sh says it has no OAuth or access tokens. | Gap |
+
+The comparison uses `apps/site/src/capabilities/index.ts`, `apps/cli/src/command.ts`, `packages/capability/src/approval.ts`, `packages/auth/src/auth.ts`, and the hosted site's `auth.md`. See [one capability, every surface](/lore/one-capability-every-surface) and the [cartridges](/lore/cartridges) page for the contracts and auth boundary.

@@ -1,0 +1,21 @@
+---
+title: "Happy Path 81: TypeScript and effects"
+description: "Michael Arnaldi describes Effect's TypeScript design and its typed outputs, errors, and requirements."
+plain: "Michael Arnaldi describes an Effect by its output, its predictable failures and its requirements."
+group: source
+speaker: "Michael Arnaldi"
+date: 2024-04-05
+url: https://youtu.be/gc5P36t6kD0
+sources:
+  - url: https://youtu.be/gc5P36t6kD0
+    title: "#81 TypeScript & Effects with Michael Arnaldi - YouTube"
+    publisher: "Michael Arnaldi"
+    note: "Recording; used for Effect’s TypeScript design and typed output, error, and requirements channels."
+    accessed: "2026-10-01"
+---
+
+# Happy Path 81: TypeScript and effects
+
+Michael traces Effect to a small financial software team that needed maintainable TypeScript and describes adapting ZIO ideas to TypeScript's type system and execution model. [05:43](https://youtu.be/gc5P36t6kD0?t=343) [10:51](https://youtu.be/gc5P36t6kD0?t=651) [24:24](https://youtu.be/gc5P36t6kD0?t=1464)
+
+He describes an Effect by its output, predictable failures, and requirements. Layers let tests replace dependencies, while the type system narrows errors as they are handled. [33:34](https://youtu.be/gc5P36t6kD0?t=2014) [49:15](https://youtu.be/gc5P36t6kD0?t=2955)
