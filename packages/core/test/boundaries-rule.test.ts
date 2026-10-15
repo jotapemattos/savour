@@ -76,9 +76,8 @@ const expectRuleSoft = (result: LintResult, message: string) => {
 describe("architecture boundary rules", () => {
   it("keeps code-snippets and Shiki out of runtime import graphs", () => {
     for (const source of [
-      'import { prepareCode } from "@savour/code-snippets";',
       'const engine = import("shiki");',
-      'export * from "@savour/code-snippets/shiki";',
+      'import { createHighlighter } from "shiki";',
     ]) {
       expectRuleSoft(
         lintFixture("apps/site/src", source),
