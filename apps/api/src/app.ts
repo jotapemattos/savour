@@ -6,16 +6,14 @@ import type { CaptureOptions } from "@savour/events";
 import * as AlchemyHttp from "alchemy/Http";
 import { Effect, Layer } from "effect";
 import { HttpRouter } from "effect/http";
-import { HttpApiBuilder, HttpApiScalar } from "effect/http-api";
+import { HttpApiBuilder } from "effect/http-api";
 
 export const http = toHttpApi("Savour", capabilities);
 
-export const apiRoutes = Layer.merge(
-  HttpApiBuilder.layer(http.api, { openapiPath: "/openapi.json" }).pipe(
-    Layer.provide(http.layer)
-  ),
-  HttpApiScalar.layer(http.api, { path: "/docs" })
-).pipe(
+export const apiRoutes = HttpApiBuilder.layer(http.api, {
+  openapiPath: "/openapi.json",
+}).pipe(
+  Layer.provide(http.layer),
   Layer.provide(Flags.defaults(eventFlags)),
   Layer.provide(AlchemyHttp.Platform)
 );

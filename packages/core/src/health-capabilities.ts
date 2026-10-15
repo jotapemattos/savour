@@ -15,11 +15,6 @@ export const healthNextActions = [
     href: "/openapi.json",
     rel: "describedby",
   },
-  {
-    description: "Browse the interactive API reference.",
-    href: "/docs",
-    rel: "help",
-  },
 ] as const;
 
 export const health = implement(healthContract, () =>
