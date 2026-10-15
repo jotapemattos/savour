@@ -128,7 +128,7 @@ describe("built CLI", () => {
   });
 
   it("prints the health report as JSON", () => {
-    const result = runCli(["health", "--json"]);
+    const result = runCli(["health"]);
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('"service": "savour-api"');
