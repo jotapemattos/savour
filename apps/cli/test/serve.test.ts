@@ -79,7 +79,7 @@ describe("serve routes", () => {
     Effect.gen(function* runsCapability() {
       const client = yield* HttpApiClient.make(http.api);
 
-      const report = yield* client.capabilities.health({ payload: {} });
+      const report = yield* client.capabilities.health({ query: {} });
 
       const error = yield* client.capabilities
         .getFlag({ payload: { context: {}, name: "NOT_A_FLAG" } })
@@ -97,7 +97,7 @@ describe("serve routes", () => {
   it.effect("records REST calls when served with devtools", () =>
     Effect.gen(function* recordsRestCalls() {
       const client = yield* HttpApiClient.make(http.api);
-      yield* client.capabilities.health({ payload: {} });
+      yield* client.capabilities.health({ query: {} });
 
       const { entries } = yield* (yield* CallLog).snapshot;
 

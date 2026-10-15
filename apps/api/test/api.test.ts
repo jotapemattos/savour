@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
-import { healthNextActions } from "@savour/core";
+import { HealthReport, healthNextActions } from "@savour/core";
 import { EventSinkMemory, memoryEventsLayer } from "@savour/events/memory";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import * as HttpServerRequest from "effect/http/HttpServerRequest";
 import * as HttpServerResponse from "effect/http/HttpServerResponse";
 
@@ -13,6 +13,10 @@ const requestTo = (path: string) =>
       headers: { "cf-connecting-ip": "203.0.113.7", "user-agent": "api-test" },
     })
   );
+
+const decodeHealth = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(HealthReport)
+);
 
 const serve = <E, R>(
   app: Effect.Effect<HttpServerResponse.HttpServerResponse, E, R>,
@@ -31,7 +35,7 @@ describe("savour api", () => {
 
       expect(response.status).toBe(200);
       expect(
-        yield* Effect.promise(async () => await response.json())
+        yield* decodeHealth(yield* Effect.promise(() => response.text()))
       ).toStrictEqual({
         next: healthNextActions,
         service: "savour-api",
@@ -63,9 +67,9 @@ describe("savour api", () => {
       const response = yield* serve(app, "/openapi.json");
 
       expect(response.status).toBe(200);
-      expect(
-        yield* Effect.promise(async () => await response.text())
-      ).toContain('"/health"');
+      expect(yield* Effect.promise(() => response.text())).toContain(
+        '"/health"'
+      );
     })
   );
 });

@@ -3,6 +3,7 @@ import { capabilities } from "@savour/core";
 import { Flags, eventFlags } from "@savour/core/flags";
 import { withEventCapture } from "@savour/events";
 import type { CaptureOptions } from "@savour/events";
+import * as AlchemyHttp from "alchemy/Http";
 import { Effect, Layer } from "effect";
 import { HttpRouter } from "effect/http";
 import { HttpApiBuilder, HttpApiScalar } from "effect/http-api";
@@ -14,7 +15,10 @@ export const apiRoutes = Layer.merge(
     Layer.provide(http.layer)
   ),
   HttpApiScalar.layer(http.api, { path: "/docs" })
-).pipe(Layer.provide(Flags.defaults(eventFlags)));
+).pipe(
+  Layer.provide(Flags.defaults(eventFlags)),
+  Layer.provide(AlchemyHttp.Platform)
+);
 
 export const apiApp = HttpRouter.toHttpEffect(apiRoutes);
 
