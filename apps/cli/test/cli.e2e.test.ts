@@ -3,7 +3,7 @@ import { spawn, spawnSync } from "node:child_process";
 import path from "node:path";
 
 import { describe, expect, it } from "@effect/vitest";
-import { CallEntrySchema, OutcomeSchema } from "@rat-stack/devtools";
+import { CallEntrySchema, OutcomeSchema } from "@savour/devtools";
 import { Schema } from "effect";
 
 const cliDir = path.resolve(import.meta.dirname, "..");
@@ -11,8 +11,6 @@ const cliDir = path.resolve(import.meta.dirname, "..");
 const repoRoot = path.resolve(cliDir, "../..");
 
 const cliPath = path.join(cliDir, "dist", "cli.js");
-
-const readmePath = path.join(repoRoot, "README.md");
 
 const decodeOpenApi = Schema.decodeUnknownSync(
   Schema.fromJsonString(
@@ -124,34 +122,31 @@ describe("built CLI", () => {
     expect(result.stdout).toContain("USAGE");
     expect(result.stdout).not.toContain("registerInterest");
 
-    for (const name of ["stats", "catalog", "openapi", "serve", "mcp"]) {
+    for (const name of ["health", "catalog", "openapi", "serve", "mcp"]) {
       expect(result.stdout).toContain(name);
     }
   });
 
-  it("prints human-readable stats without --json", () => {
-    const result = runCli(["stats", readmePath]);
+  it("prints the health report as JSON", () => {
+    const result = runCli(["health", "--json"]);
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain(readmePath);
-    expect(result.stdout).toMatch(/words:\s+\d+/u);
+    expect(result.stdout).toContain('"service": "savour-api"');
+    expect(result.stdout).toContain('"status": "ok"');
+    expect(result.stdout).toContain('"href": "/openapi.json"');
   });
 
-  it("prints JSON stats and exits cleanly", () => {
-    const result = runCli(["stats", readmePath, "--json"]);
-
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain(`"path": "${readmePath}"`);
-    expect(result.stdout).toMatch(/"words": \d+/u);
-  });
-
-  it("reports the typed failure and exits one for a missing file", () => {
-    const result = runCli(["stats", "this-file-does-not-exist.txt"]);
+  it("reports the typed failure and exits one for an unknown flag", () => {
+    const result = runCli([
+      "getFlag",
+      "--name",
+      "NOT_A_FLAG",
+      "--context",
+      "{}",
+    ]);
 
     expect(result.status).toBe(1);
-    expect(`${result.stdout}${result.stderr}`).toContain(
-      "Could not read this-file-does-not-exist.txt"
-    );
+    expect(`${result.stdout}${result.stderr}`).toContain("NOT_A_FLAG");
   });
 
   it("prints the catalog as TypeScript declarations", () => {
@@ -159,7 +154,7 @@ describe("built CLI", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("declare const tools: {");
-    expect(result.stdout).toContain("readonly inspectFile: (input:");
+    expect(result.stdout).toContain("readonly health: (input:");
   });
 
   it("prints an OpenAPI document with one path per capability", () => {
@@ -167,7 +162,7 @@ describe("built CLI", () => {
 
     expect(result.status).toBe(0);
     const document = decodeOpenApi(result.stdout);
-    expect(document.paths["/inspectFile"]?.post).toBeDefined();
+    expect(document.paths["/health"]?.get).toBeDefined();
   });
 });
 
@@ -196,7 +191,7 @@ describe("built MCP server", () => {
           method: "tools/call",
           params: {
             arguments: {
-              code: `const stats = await tools.inspectFile({ path: ${JSON.stringify(readmePath)} }); return stats.lines > 10;`,
+              code: `const report = await tools.health({}); return report.status === "ok";`,
             },
             name: "execute",
           },
@@ -232,9 +227,7 @@ describe("built MCP server", () => {
     expect(listing?.error).toBeUndefined();
     const result = decodeToolsList(listing?.result);
 
-    const tool = result.tools.find(
-      (candidate) => candidate.name === "inspectFile"
-    );
+    const tool = result.tools.find((candidate) => candidate.name === "health");
 
     expect(tool).toBeDefined();
     expect(tool?.annotations?.readOnlyHint).toBe(true);
@@ -250,7 +243,7 @@ describe("built MCP server", () => {
           method: "tools/call",
           params: {
             arguments: {
-              code: `await tools.inspectFile({ path: ${JSON.stringify(readmePath)} }); return await tools.rat_list_calls({});`,
+              code: `await tools.health({}); return await tools.rat_list_calls({});`,
             },
             name: "execute",
           },
@@ -268,8 +261,8 @@ describe("built MCP server", () => {
 
     expect(matched).toBe(1);
     expect(entry).toMatchObject({
-      capability: "inspectFile",
-      input: { path: readmePath },
+      capability: "health",
+      input: {},
     });
     expect(
       entry !== undefined && OutcomeSchema.guards.Succeeded(entry.outcome)

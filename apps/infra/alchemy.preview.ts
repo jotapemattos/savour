@@ -1,28 +1,28 @@
+import Api from "@savour/api/worker";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Stage } from "alchemy/Stage";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 
-import { Website } from "../web/src/website.js";
 import { PreviewStage, previewResourcesAllowed } from "./src/preview.js";
 
 export const previewProgram = Effect.gen(function* previewStack() {
   yield* Schema.decodeEffect(PreviewStage)(yield* Stage).pipe(Effect.orDie);
-  const website = yield* Website;
+  const api = yield* Api;
   const stack = yield* Alchemy.Stack;
 
   if (!previewResourcesAllowed(stack.resources)) {
     return yield* Effect.die(
-      new Error("Preview may declare only Website and RpcBackend Workers")
+      new Error("Preview may declare only the Api Worker")
     );
   }
 
-  return { websiteUrl: website.url };
+  return { apiUrl: api.url };
 });
 
 export default Alchemy.Stack(
-  "RatStackPreview",
+  "SavourPreview",
   { providers: Cloudflare.providers(), state: Cloudflare.state() },
   previewProgram
 );

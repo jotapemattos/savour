@@ -7,13 +7,9 @@ import * as Cloudflare from "alchemy/Cloudflare";
 import { collection } from "alchemy/Provider";
 import { Stage } from "alchemy/Stage";
 import { inMemoryState } from "alchemy/State";
-import { ConfigProvider, Effect, Layer, Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
 import * as Arbitrary from "effect/Arbitrary";
 
-import {
-  rpcContentDirectory,
-  rpcProjection,
-} from "../../site/src/rpc-worker.js";
 import previewDefinition, { previewProgram } from "../alchemy.preview.js";
 import { PreviewStage, previewResourcesAllowed } from "../src/preview.js";
 
@@ -28,11 +24,11 @@ it.effect("loads the preview through Alchemy's entrypoint boundary", () =>
 );
 
 it.effect.prop(
-  "preview declarations contain only the Website and its isolated content backend",
+  "preview declarations contain only the Api Worker",
   { stage: Arbitrary.schema(PreviewStage) },
   ({ stage }) =>
     Alchemy.Stack(
-      "RatStackPreview",
+      "SavourPreview",
       {
         providers: Layer.effect(Cloudflare.Providers, collection([])),
         state: inMemoryState(),
@@ -40,72 +36,9 @@ it.effect.prop(
       previewProgram
     ).pipe(
       Effect.tap((stack) =>
-        Effect.gen(function* checkPreviewDeclaration() {
+        Effect.sync(() => {
           expect(previewResourcesAllowed(stack.resources)).toBe(true);
-          expect(stack.resources.Website?.Props).toMatchObject({
-            assets: {
-              htmlHandling: "drop-trailing-slash",
-              runWorkerFirst: [
-                "/rpc",
-                "/rpc/*",
-                "/__error",
-                "/__rat",
-                "/__rat/*",
-                "/prompts",
-                "/prompts/*",
-              ],
-            },
-            domain: { name: `${stage}.ratstack.sh`, zoneName: "ratstack.sh" },
-            workersDev: false,
-          });
-
-          const websiteProps = yield* Schema.decodeUnknownEffect(
-            Schema.Struct({
-              env: Schema.Record(Schema.String, Schema.Unknown),
-            })
-          )(stack.resources.Website?.Props);
-
-          expect(websiteProps.env.PREVIEW_COMMIT).toBe("a".repeat(40));
-          expect(Object.keys(websiteProps.env).toSorted()).toEqual([
-            "BACKEND",
-            "PREVIEW_COMMIT",
-          ]);
-
-          const backendProps = yield* Schema.decodeUnknownEffect(
-            Schema.Struct({
-              assets: Schema.Struct({
-                directory: Schema.String,
-                htmlHandling: Schema.Literal("none"),
-                runWorkerFirst: Schema.Literal(true),
-              }),
-              env: Schema.optional(
-                Schema.Record(Schema.String, Schema.Unknown)
-              ),
-              workersDev: Schema.Boolean,
-            })
-          )(stack.resources.RpcBackend?.Props);
-
-          expect(backendProps.assets.directory).toBe(rpcContentDirectory());
-          expect(backendProps.workersDev).toBe(false);
-          expect(Object.keys(backendProps.env ?? {})).toEqual([]);
-          expect(
-            [...rpcProjection.group.requests.keys()].every((name) =>
-              [
-                "listFlags",
-                "getFlag",
-                "listPrompts",
-                "getPrompt",
-                "search",
-                "read",
-                "backlinks",
-                "neighbors",
-                "mentions",
-                "path",
-                "listCafeNews",
-                "listCafeProjects",
-              ].includes(name)
-            )
-          ).toBe(true);
+          expect(Object.keys(stack.resources)).toStrictEqual(["Api"]);
         })
       ),
       Effect.provideService(Stage, stage),
@@ -115,10 +48,6 @@ it.effect.prop(
         dotAlchemy: ".alchemy",
       }),
       Effect.provide(NodeServices.layer),
-      Effect.provideService(
-        ConfigProvider.ConfigProvider,
-        ConfigProvider.fromUnknown({ PREVIEW_COMMIT: "a".repeat(40) })
-      ),
       Effect.scoped,
       Effect.asVoid
     )
@@ -140,8 +69,7 @@ it.prop(
   ({ id, type }) => {
     expect(
       previewResourcesAllowed({
-        RpcBackend: { Type: "Cloudflare.Worker" },
-        Website: { Type: "Cloudflare.Worker" },
+        Api: { Type: "Cloudflare.Worker" },
         [`extra/${id}`]: { Type: type },
       })
     ).toBe(false);

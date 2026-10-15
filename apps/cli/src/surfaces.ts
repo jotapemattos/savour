@@ -2,18 +2,16 @@
 import { createServer } from "node:http";
 
 import { NodeHttpServer } from "@effect/platform-node";
-import type { AnyCapability } from "@rat-stack/capability";
+import type { AnyCapability } from "@savour/capability";
 import {
   layerSubprocess,
   toCodeMode,
   toHttpApi,
   toToolkit,
-} from "@rat-stack/capability";
-import { capabilities as coreCapabilities } from "@rat-stack/core";
-import { flagWriteCapabilities } from "@rat-stack/core/flag-write-capabilities";
-import { devtools, devtoolsLayer } from "@rat-stack/devtools";
-import { learnCapabilities } from "@rat-stack/learn";
-import { localLearnCapabilities } from "@rat-stack/learn/local";
+} from "@savour/capability";
+import { capabilities as coreCapabilities } from "@savour/core";
+import { flagWriteCapabilities } from "@savour/core/flag-write-capabilities";
+import { devtools, devtoolsLayer } from "@savour/devtools";
 import { Effect, Layer, Logger } from "effect";
 import { McpServer } from "effect/ai";
 import { HttpRouter } from "effect/http";
@@ -22,22 +20,16 @@ import { HttpApiBuilder, HttpApiScalar } from "effect/http-api";
 import { mcpProtocols } from "./mcp-protocols.js";
 import { VERSION } from "./version.js";
 
-export const capabilities = [
-  ...coreCapabilities,
-  ...learnCapabilities,
-] as const;
+export const capabilities = coreCapabilities;
 
-export const cliCapabilities = [
-  ...coreCapabilities,
-  ...localLearnCapabilities,
-] as const;
+export const cliCapabilities = coreCapabilities;
 
 export const commandCapabilities = [
   ...cliCapabilities,
   ...flagWriteCapabilities,
 ] as const;
 
-export const http = toHttpApi("RatStack", capabilities);
+export const http = toHttpApi("Savour", capabilities);
 
 export const tools = toToolkit(cliCapabilities);
 
@@ -59,7 +51,7 @@ export const webServer = (port: number) =>
   HttpRouter.serve(routes).pipe(Layer.provide(serverLayer(port)));
 
 const stdio = McpServer.layerStdio({
-  name: "rat-stack",
+  name: "savour",
   protocols: mcpProtocols,
   version: VERSION,
 });
@@ -92,7 +84,7 @@ const toolkitServer = <const Caps extends readonly AnyCapability[]>(
 export const devtoolsRoutes = withDevtools(
   capabilities,
   ({ capabilities: all, recorded }) => {
-    const api = toHttpApi("RatStack", recorded);
+    const api = toHttpApi("Savour", recorded);
 
     return Layer.mergeAll(
       HttpApiBuilder.layer(api.api, { openapiPath: "/openapi.json" }).pipe(
@@ -102,7 +94,7 @@ export const devtoolsRoutes = withDevtools(
       toolkitServer(all).pipe(
         Layer.provide(
           McpServer.layerHttp({
-            name: "rat-stack-devtools",
+            name: "savour-devtools",
             path: DEVTOOLS_MCP_PATH,
             protocols: mcpProtocols,
             version: VERSION,

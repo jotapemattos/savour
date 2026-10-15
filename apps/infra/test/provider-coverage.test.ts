@@ -10,7 +10,7 @@ import stack from "../alchemy.run.js";
 
 const services = Layer.mergeAll(
   AlchemyContextLive.pipe(Layer.provideMerge(NodeServices.layer)),
-  Layer.succeed(Stage, "prod"),
+  Layer.succeed(Stage, "staging"),
   Layer.succeed(AuthProviders, {}),
   Layer.succeed(
     HttpClient.HttpClient,
@@ -21,52 +21,41 @@ const services = Layer.mergeAll(
 );
 
 it.effect.prop(
-  "the production Stack provides every declared resource type in every auth and events flag combination",
-  { auth: Schema.Boolean, events: Schema.Boolean },
-  ({ auth, events }) =>
+  "the Stack declares one Api Worker and a provider for every resource, with events on and off",
+  { events: Schema.Boolean },
+  ({ events }) =>
     Effect.gen(function* checkStackProviders() {
-      for (const authEnabled of [auth, !auth]) {
-        for (const eventsEnabled of [events, !events]) {
-          const compiled = yield* stack.pipe(
-            Effect.provide(services),
-            Effect.provideService(
-              ConfigProvider.ConfigProvider,
-              ConfigProvider.fromUnknown({
-                AUTH_ENABLED: authEnabled,
-                EMAIL_FORWARD_TO: "forward@example.test",
-                EVENTS_ENABLED: eventsEnabled,
-              })
-            )
-          );
+      for (const eventsEnabled of [events, !events]) {
+        const compiled = yield* stack.pipe(
+          Effect.provide(services),
+          Effect.provideService(
+            ConfigProvider.ConfigProvider,
+            ConfigProvider.fromUnknown({ EVENTS_ENABLED: eventsEnabled })
+          )
+        );
 
-          const resources = Object.values(compiled.resources);
+        const resources = Object.values(compiled.resources);
 
-          expect(resources.length).toBeGreaterThan(0);
+        expect(
+          resources
+            .filter((resource) => resource.Type === "Cloudflare.Worker")
+            .map((resource) => resource.LogicalId)
+        ).toStrictEqual(["Api"]);
+
+        for (const resource of resources) {
+          const provider = yield* tryFindProviderRegistrationByType(
+            resource.Type
+          ).pipe(Effect.provideContext(compiled.services));
+
           expect(
-            resources.some((resource) => resource.Type === "Drizzle.Schema")
+            Option.isSome(provider),
+            `${resource.FQN}: provider missing for ${resource.Type}; EVENTS_ENABLED=${eventsEnabled}`
           ).toBe(true);
+        }
 
-          for (const resource of resources) {
-            const provider = yield* tryFindProviderRegistrationByType(
-              resource.Type
-            ).pipe(Effect.provideContext(compiled.services));
-
-            expect(
-              Option.isSome(provider),
-              `${resource.FQN}: provider missing for ${resource.Type}; AUTH_ENABLED=${authEnabled}; EVENTS_ENABLED=${eventsEnabled}`
-            ).toBe(true);
-          }
-
-          const actions = Object.values(compiled.actions);
-
-          expect(
-            actions.some((action) => action.Type === "BetterAuth.Migrate")
-          ).toBe(authEnabled);
-
-          for (const action of actions) {
-            expect(action.Kind, action.FQN).toBe("action");
-            expect(action.Run, action.FQN).toBeTypeOf("function");
-          }
+        for (const action of Object.values(compiled.actions)) {
+          expect(action.Kind, action.FQN).toBe("action");
+          expect(action.Run, action.FQN).toBeTypeOf("function");
         }
       }
     }),

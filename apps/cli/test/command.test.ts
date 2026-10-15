@@ -15,6 +15,6 @@ describe("command registration", () => {
 
     expect(
       rootCommand.subcommands.flatMap((group) => group.commands)
-    ).toHaveLength(commandCapabilities.length + 5);
+    ).toHaveLength(commandCapabilities.length + 4);
   });
 });
