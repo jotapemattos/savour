@@ -4,6 +4,14 @@ A Letterboxd for restaurants: log visits, keep a diary and a want-to-go list, an
 
 Savour is built on the [rat-stack](https://ratstack.sh) scaffold: Effect for typed work and errors, XState for lifecycles, one schema-typed contract per capability projected to CLI, HTTP and MCP, Alchemy for Cloudflare infrastructure, and a lint and type fence that rejects banned code. Project rules and the deliberate deviations from the starter are in [`AGENTS.md`](AGENTS.md). Credit for imported code is in [`PROVENANCE.md`](PROVENANCE.md).
 
+## Prerelease pins
+
+Some of the stack runs on prerelease versions, pinned exactly:
+
+- XState `6.0.0-alpha.65` owns lifecycle states.
+- `@xstate/effect` `0.1.0-alpha.7` runs machines as scoped Effects through `createEffectActor`.
+- Alchemy `2.0.0-beta.83` declares the Cloudflare Stack in `apps/infra/alchemy.run.ts`.
+
 ## Layout
 
 - `apps/api`: the Cloudflare Worker that serves every capability over HTTP, with `/openapi.json` and `/docs`.
