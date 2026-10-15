@@ -1,12 +1,12 @@
-export { defineFlag, Flags } from "@rat-stack/core/flags";
+export { defineFlag, Flags } from "@savour/core/flags";
 
-export type { Flag, FlagContext } from "@rat-stack/core/flags";
+export type { Flag, FlagContext } from "@savour/core/flags";
 
 export {
   flagCapabilities,
   getFlag,
   listFlags,
-} from "@rat-stack/core/flag-capabilities";
+} from "@savour/core/flag-capabilities";
 
 export {
   evaluateFlag,

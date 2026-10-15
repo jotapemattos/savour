@@ -1,5 +1,5 @@
 {
-  "name": "@rat-stack/flags",
+  "name": "@savour/flags",
   "version": "0.1.0",
   "private": true,
   "files": [
@@ -48,8 +48,8 @@
     "pretest": "pnpm run --silent build"
   },
   "dependencies": {
-    "@rat-stack/capability": "workspace:*",
-    "@rat-stack/core": "workspace:*",
+    "@savour/capability": "workspace:*",
+    "@savour/core": "workspace:*",
     "@xstate/effect": "0.1.0-alpha.7",
     "alchemy": "2.0.0-beta.83",
     "effect": "4.0.0",

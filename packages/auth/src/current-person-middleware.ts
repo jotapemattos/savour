@@ -1,4 +1,4 @@
-import { PersonIdSchema } from "@rat-stack/database";
+import { PersonIdSchema } from "@savour/database";
 import type { RuntimeContext } from "alchemy";
 import { Effect, Layer, Schema } from "effect";
 import * as RpcMiddleware from "effect/rpc/RpcMiddleware";
@@ -13,7 +13,7 @@ export class CurrentPersonMiddleware extends RpcMiddleware.Service<
     provides: CurrentPerson;
     requires: RuntimeContext;
   }
->()("@rat-stack/auth/CurrentPersonMiddleware", {
+>()("@savour/auth/CurrentPersonMiddleware", {
   error: Unauthenticated,
 }) {}
 

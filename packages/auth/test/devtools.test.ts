@@ -1,8 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
-import { defineContract, implement } from "@rat-stack/capability";
-import { PersonIdSchema } from "@rat-stack/database";
-import { CallLog, devtools, devtoolsLayer } from "@rat-stack/devtools";
-import type { InvokeResult } from "@rat-stack/devtools";
+import { defineContract, implement } from "@savour/capability";
+import { PersonIdSchema } from "@savour/database";
+import { CallLog, devtools, devtoolsLayer } from "@savour/devtools";
+import type { InvokeResult } from "@savour/devtools";
 import { RuntimeContext } from "alchemy";
 import { Effect, Layer, Schema } from "effect";
 

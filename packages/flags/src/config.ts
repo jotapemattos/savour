@@ -1,6 +1,6 @@
-import { flagControlDefaults } from "@rat-stack/core/flag-control";
-import { Flags, decodeFlag } from "@rat-stack/core/flags";
-import type { Flag } from "@rat-stack/core/flags";
+import { flagControlDefaults } from "@savour/core/flag-control";
+import { Flags, decodeFlag } from "@savour/core/flags";
+import type { Flag } from "@savour/core/flags";
 import { Config, Effect, Layer, Schema } from "effect";
 
 export const configFlagsLayer = (registry: readonly Flag<unknown>[]) =>

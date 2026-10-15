@@ -1,5 +1,5 @@
 import { NodeRuntime } from "@effect/platform-node";
-import { eventFlags } from "@rat-stack/core/flags";
+import { eventFlags } from "@savour/core/flags";
 
 import { checkFlagExpiry } from "./expiry.js";
 

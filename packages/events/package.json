@@ -1,5 +1,5 @@
 {
-  "name": "@rat-stack/events",
+  "name": "@savour/events",
   "version": "0.1.0",
   "private": true,
   "files": [
@@ -43,7 +43,7 @@
     "pretest": "pnpm run --silent build"
   },
   "dependencies": {
-    "@rat-stack/core": "workspace:*",
+    "@savour/core": "workspace:*",
     "alchemy": "2.0.0-beta.83",
     "effect": "4.0.0"
   },

@@ -7,7 +7,7 @@ import { VisitorSalt } from "./visitor-salt.js";
 export class EventSinkMemory extends Context.Service<
   EventSinkMemory,
   { readonly events: Effect.Effect<readonly RawEvent[]> }
->()("@rat-stack/events/EventSinkMemory") {}
+>()("@savour/events/EventSinkMemory") {}
 
 export const memoryEventsLayer = (salt: string) =>
   Layer.unwrap(

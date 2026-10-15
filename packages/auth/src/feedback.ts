@@ -346,6 +346,6 @@ type FeedbackIdentityService = Effect.Success<typeof makeFeedbackIdentity>;
 export class FeedbackIdentity extends Context.Service<
   FeedbackIdentity,
   FeedbackIdentityService
->()("@rat-stack/auth/FeedbackIdentity") {
+>()("@savour/auth/FeedbackIdentity") {
   static readonly layer = Layer.effect(FeedbackIdentity, makeFeedbackIdentity);
 }

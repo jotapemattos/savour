@@ -11,4 +11,4 @@ export class EventSink extends Context.Service<
       events: readonly RawEvent[]
     ) => Effect.Effect<void, EventSinkError>;
   }
->()("@rat-stack/events/EventSink") {}
+>()("@savour/events/EventSink") {}

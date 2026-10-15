@@ -94,7 +94,7 @@ export class CrashArchive extends Context.Service<
       record: CrashRecord
     ) => Effect.Effect<void, CrashArchiveError | InvalidCrashTrace>;
   }
->()("@rat-stack/events/CrashArchive") {}
+>()("@savour/events/CrashArchive") {}
 
 const parseUrl = (url: string) => {
   const parsed = URL.canParse(url) ? new URL(url) : undefined;

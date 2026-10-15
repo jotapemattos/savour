@@ -33,7 +33,7 @@ export class RunLog extends Context.Service<
       DatabaseError | InvalidDatabaseInput
     >;
   }
->()("@rat-stack/database/RunLog") {}
+>()("@savour/database/RunLog") {}
 
 const makeRunLogService = (store: RunLogRepository, crypto: Crypto.Crypto) =>
   RunLog.of({

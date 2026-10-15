@@ -1,4 +1,4 @@
-import { isGeoLabel } from "@rat-stack/core/request-geo";
+import { isGeoLabel } from "@savour/core/request-geo";
 import { Clock, Crypto, DateTime, Effect, Schema } from "effect";
 import * as HttpServerRequest from "effect/http/HttpServerRequest";
 import * as HttpServerResponse from "effect/http/HttpServerResponse";

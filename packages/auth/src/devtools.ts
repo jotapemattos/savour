@@ -1,5 +1,5 @@
-import { defineContract, implement } from "@rat-stack/capability";
-import { PersonIdSchema } from "@rat-stack/database";
+import { defineContract, implement } from "@savour/capability";
+import { PersonIdSchema } from "@savour/database";
 import { Effect, Layer, Schema } from "effect";
 
 import { Auth } from "./auth.js";

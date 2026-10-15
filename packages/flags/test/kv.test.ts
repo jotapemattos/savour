@@ -1,8 +1,8 @@
 import { NodeCrypto } from "@effect/platform-node";
 import { expect, it } from "@effect/vitest";
-import { Approval } from "@rat-stack/capability/approval";
-import { FlagJournal } from "@rat-stack/core/flag-control";
-import { setFlag } from "@rat-stack/core/flag-write-capabilities";
+import { Approval } from "@savour/capability/approval";
+import { FlagJournal } from "@savour/core/flag-control";
+import { setFlag } from "@savour/core/flag-write-capabilities";
 import {
   Flags,
   FlagStorageError,
@@ -10,7 +10,7 @@ import {
   eventFlags,
   eventsEnabled,
   eventsIdentityMode,
-} from "@rat-stack/core/flags";
+} from "@savour/core/flags";
 import {
   ConfigProvider,
   Deferred,

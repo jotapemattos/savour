@@ -5,14 +5,10 @@ import {
   FlagJournal,
   FlagWriter,
   validateFlagChangeQuery,
-} from "@rat-stack/core/flag-control";
-import type { ListFlagChangesInput } from "@rat-stack/core/flag-control";
-import {
-  FlagStorageError,
-  Flags,
-  InvalidFlagValue,
-} from "@rat-stack/core/flags";
-import type { Flag } from "@rat-stack/core/flags";
+} from "@savour/core/flag-control";
+import type { ListFlagChangesInput } from "@savour/core/flag-control";
+import { FlagStorageError, Flags, InvalidFlagValue } from "@savour/core/flags";
+import type { Flag } from "@savour/core/flags";
 import { Clock, Effect, Layer, Schema } from "effect";
 
 import { InvalidFlagJournal } from "./invalid-flag-journal.js";

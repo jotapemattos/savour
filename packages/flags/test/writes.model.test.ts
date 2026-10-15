@@ -1,14 +1,14 @@
 import { NodeCrypto } from "@effect/platform-node";
 import { expect, it } from "@effect/vitest";
-import { Approval } from "@rat-stack/capability/approval";
-import { getFlag } from "@rat-stack/core/flag-capabilities";
+import { Approval } from "@savour/capability/approval";
+import { getFlag } from "@savour/core/flag-capabilities";
 import {
   FlagActor,
   FlagJournal,
   FlagPreviousValue,
-} from "@rat-stack/core/flag-control";
-import { setFlag } from "@rat-stack/core/flag-write-capabilities";
-import { Flags, defineFlag } from "@rat-stack/core/flags";
+} from "@savour/core/flag-control";
+import { setFlag } from "@savour/core/flag-write-capabilities";
+import { Flags, defineFlag } from "@savour/core/flags";
 import { Effect, Exit, Layer, Schema } from "effect";
 import * as Arbitrary from "effect/Arbitrary";
 import { TestClock } from "effect/testing";

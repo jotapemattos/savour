@@ -18,7 +18,7 @@ import { RunLogs as PostgresRunLogs } from "../src/schema/postgres.js";
 export class ControlledClock extends Context.Service<
   ControlledClock,
   { readonly setTime: (timestamp: number) => void }
->()("@rat-stack/database/test/ControlledClock") {}
+>()("@savour/database/test/ControlledClock") {}
 
 const makeClock = () => {
   let now = 0;

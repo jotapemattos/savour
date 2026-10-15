@@ -1,6 +1,6 @@
-import { FlagJournal, FlagWriter } from "@rat-stack/core/flag-control";
-import { Flags, decodeFlag } from "@rat-stack/core/flags";
-import type { Flag } from "@rat-stack/core/flags";
+import { FlagJournal, FlagWriter } from "@savour/core/flag-control";
+import { Flags, decodeFlag } from "@savour/core/flags";
+import type { Flag } from "@savour/core/flags";
 import { Effect, Layer, Ref, Schema } from "effect";
 
 import { evaluateFlag, FlagRule } from "./evaluate.js";

@@ -1,7 +1,7 @@
 import { BetterAuth } from "@alchemy.run/better-auth";
 import type { BetterAuthProps } from "@alchemy.run/better-auth";
 import { CloudflareD1 } from "@alchemy.run/better-auth/CloudflareD1";
-import { DatabaseVendor } from "@rat-stack/database";
+import { DatabaseVendor } from "@savour/database";
 import { Effect, Layer, Match } from "effect";
 
 import { authOptions } from "./auth-options.js";

@@ -1,12 +1,12 @@
 import { expect, it } from "@effect/vitest";
-import { getFlag, listFlags } from "@rat-stack/core/flag-capabilities";
+import { getFlag, listFlags } from "@savour/core/flag-capabilities";
 import {
   Flags,
   eventFlags,
   eventsEnabled,
   eventsIdentityMode,
   defineFlag,
-} from "@rat-stack/core/flags";
+} from "@savour/core/flags";
 import {
   Config,
   ConfigProvider,

@@ -1,4 +1,4 @@
-import type { Flag, Flags } from "@rat-stack/core/flags";
+import type { Flag, Flags } from "@savour/core/flags";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Namespace from "alchemy/Namespace";
 import { retain } from "alchemy/RemovalPolicy";

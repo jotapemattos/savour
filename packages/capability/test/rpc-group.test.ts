@@ -1,5 +1,5 @@
-import { defineContract } from "@rat-stack/capability/contract";
-import { toRpcGroup } from "@rat-stack/capability/rpc-group";
+import { defineContract } from "@savour/capability/contract";
+import { toRpcGroup } from "@savour/capability/rpc-group";
 import { Schema } from "effect";
 import { expect, it } from "vitest";
 

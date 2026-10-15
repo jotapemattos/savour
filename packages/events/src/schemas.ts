@@ -1,4 +1,4 @@
-import { RequestGeoSchema } from "@rat-stack/core/request-geo";
+import { RequestGeoSchema } from "@savour/core/request-geo";
 import { Schema } from "effect";
 
 export const AnonymousIdSchema = Schema.NonEmptyString.pipe(

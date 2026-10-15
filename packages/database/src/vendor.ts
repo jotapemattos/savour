@@ -16,4 +16,4 @@ export type DatabaseVendorResource =
 export class DatabaseVendor extends Context.Service<
   DatabaseVendor,
   DatabaseVendorResource
->()("@rat-stack/database/DatabaseVendor") {}
+>()("@savour/database/DatabaseVendor") {}
