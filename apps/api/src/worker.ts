@@ -40,6 +40,7 @@ const makeApiWorker = Effect.gen(function* makeApiWorker() {
 
   const events = yield* Layer.build(Basin({ id: "Api" }));
   const identityMode = yield* readFlag(eventsIdentityMode);
+
   const app = yield* capturedApiApp({
     identityMode,
     runInBackground: inBackground,

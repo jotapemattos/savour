@@ -53,10 +53,7 @@ describe("savour api", () => {
       const events = yield* (yield* EventSinkMemory).events;
 
       expect(events).toHaveLength(2);
-      expect(events.map((event) => event.path)).toStrictEqual([
-        "/health",
-        "/health",
-      ]);
+      expect(events).toMatchObject([{ path: "/health" }, { path: "/health" }]);
     }).pipe(Effect.provide(memoryEventsLayer("test-salt")))
   );
 
