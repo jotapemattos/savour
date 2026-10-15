@@ -1,4 +1,4 @@
-import { aroundHandlers, implement } from "@rat-stack/capability/implement";
+import { aroundHandlers, implement } from "@savour/capability/implement";
 import { Effect, Schema } from "effect";
 
 import { auditFlagRun } from "./flag-audit.js";

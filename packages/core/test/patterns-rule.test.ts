@@ -85,8 +85,8 @@ describe("rat-stack pattern rules", () => {
 
     for (const source of [
       'defineFlag("test", Schema.Boolean, { default: false, owner: "test" });',
-      'import { defineFlag as flag } from "@rat-stack/core/flags"; flag("test", Schema.Boolean, { default: false, owner: "test" });',
-      'import * as flags from "@rat-stack/flags"; flags.defineFlag("test", Schema.Boolean, { default: false, owner: "test", removeBy: "soon" });',
+      'import { defineFlag as flag } from "@savour/core/flags"; flag("test", Schema.Boolean, { default: false, owner: "test" });',
+      'import * as flags from "@savour/flags"; flags.defineFlag("test", Schema.Boolean, { default: false, owner: "test", removeBy: "soon" });',
     ]) {
       expectRule(lintFixture("packages/core/src", source), message);
     }
@@ -252,7 +252,7 @@ describe("rat-stack pattern rules", () => {
   it("flags a contract binding that does not match its name", () => {
     const result = lintFixture(
       "packages/core/src",
-      'import { defineContract } from "@rat-stack/capability/contract";\n\nexport const contract = defineContract("execute", {});\n'
+      'import { defineContract } from "@savour/capability/contract";\n\nexport const contract = defineContract("execute", {});\n'
     );
 
     expectRule(
@@ -264,12 +264,12 @@ describe("rat-stack pattern rules", () => {
   it("tracks contract aliases, static templates, wrappers, and later assignments", () => {
     const alias = lintFixture(
       "packages/core/src",
-      'import { defineContract as makeContract } from "@rat-stack/capability/contract";\n\nexport const wrongName = makeContract(`search`, {}) as object;\n'
+      'import { defineContract as makeContract } from "@savour/capability/contract";\n\nexport const wrongName = makeContract(`search`, {}) as object;\n'
     );
 
     const assignment = lintFixture(
       "packages/core/src",
-      'import { defineContract } from "@rat-stack/capability/contract";\n\nexport const create = () => { let wrongName; wrongName = defineContract("search", {}); };\n'
+      'import { defineContract } from "@savour/capability/contract";\n\nexport const create = () => { let wrongName; wrongName = defineContract("search", {}); };\n'
     );
 
     const computedIdentifier = lintFixture(
@@ -285,7 +285,7 @@ describe("rat-stack pattern rules", () => {
   it("accepts the name, the name plus Contract, and camelCase for snake_case names", () => {
     const result = lintFixture(
       "packages/core/src",
-      'import { defineContract } from "@rat-stack/capability/contract";\n\nexport const inspectFileContract = defineContract("inspectFile", {});\nexport const search = defineContract("search", {});\nexport const ratListCalls = defineContract("rat_list_calls", {});\n'
+      'import { defineContract } from "@savour/capability/contract";\n\nexport const inspectFileContract = defineContract("inspectFile", {});\nexport const search = defineContract("search", {});\nexport const ratListCalls = defineContract("rat_list_calls", {});\n'
     );
 
     expect(result.status).toBe(0);
@@ -352,17 +352,17 @@ describe("rat-stack pattern rules", () => {
   it("tracks watched actors by binding and permits tests that start actors", () => {
     const watched = lintFixture(
       "packages/core/src",
-      'import { watchActor } from "@rat-stack/capability/actor-watch";\nimport { createEffectActor } from "@xstate/effect";\nimport { Effect } from "effect";\n\nexport const start = (machine: never) =>\n  Effect.gen(function* startMachine() {\n    const actor = yield* createEffectActor(machine);\n\n    yield* watchActor("machine", actor);\n  });\n'
+      'import { watchActor } from "@savour/capability/actor-watch";\nimport { createEffectActor } from "@xstate/effect";\nimport { Effect } from "effect";\n\nexport const start = (machine: never) =>\n  Effect.gen(function* startMachine() {\n    const actor = yield* createEffectActor(machine);\n\n    yield* watchActor("machine", actor);\n  });\n'
     );
 
     const partialWatch = lintFixture(
       "packages/core/src",
-      'import { watchActor } from "@rat-stack/capability/actor-watch";\nimport { createEffectActor as makeActor } from "@xstate/effect";\n\nexport const start = (first: never, second: never) => {\n  const firstActor = makeActor(first);\n  const secondActor = makeActor(second);\n\n  watchActor("first", firstActor);\n  return secondActor;\n};\n'
+      'import { watchActor } from "@savour/capability/actor-watch";\nimport { createEffectActor as makeActor } from "@xstate/effect";\n\nexport const start = (first: never, second: never) => {\n  const firstActor = makeActor(first);\n  const secondActor = makeActor(second);\n\n  watchActor("first", firstActor);\n  return secondActor;\n};\n'
     );
 
     const called = lintFixture(
       "packages/core/src",
-      'import { watchActor } from "@rat-stack/capability/actor-watch";\nimport { createEffectActor } from "@xstate/effect";\n\nexport const start = (machine: never) => {\n  const actor = createEffectActor.call(undefined, machine);\n\n  watchActor.call(undefined, "machine", actor);\n};\n'
+      'import { watchActor } from "@savour/capability/actor-watch";\nimport { createEffectActor } from "@xstate/effect";\n\nexport const start = (machine: never) => {\n  const actor = createEffectActor.call(undefined, machine);\n\n  watchActor.call(undefined, "machine", actor);\n};\n'
     );
 
     const test = lintFixture(

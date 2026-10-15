@@ -1,4 +1,4 @@
-import { defineContract } from "@rat-stack/capability/contract";
+import { defineContract } from "@savour/capability/contract";
 import { Schema } from "effect";
 
 import { FlagStorageError } from "./flag-storage-error.js";

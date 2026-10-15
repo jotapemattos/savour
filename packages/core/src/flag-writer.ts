@@ -12,7 +12,7 @@ export class FlagWriter extends Context.Service<
       value: A
     ) => Effect.Effect<void, InvalidFlagValue | FlagStorageError>;
   }
->()("@rat-stack/core/FlagWriter") {
+>()("@savour/core/FlagWriter") {
   static disabled = Layer.succeed(FlagWriter, {
     set: (flag) =>
       Effect.fail(

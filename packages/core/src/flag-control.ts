@@ -22,12 +22,9 @@ export { FlagJournal, validateFlagChangeQuery } from "./flag-journal.js";
 
 export { FlagWriter } from "./flag-writer.js";
 
-export const FlagActor = Context.Reference<string>(
-  "@rat-stack/core/FlagActor",
-  {
-    defaultValue: () => "anonymous",
-  }
-);
+export const FlagActor = Context.Reference<string>("@savour/core/FlagActor", {
+  defaultValue: () => "anonymous",
+});
 
 export const flagControlDefaults = Layer.merge(
   FlagWriter.disabled,
