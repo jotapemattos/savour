@@ -14,7 +14,8 @@
       "outputs": []
     },
     "//#lint": {
-      "outputs": []
+      "outputs": [],
+      "dependsOn": ["@savour/capability#build"]
     },
     "//#typecheck-scripts": {
       "outputs": []
