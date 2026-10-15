@@ -1403,7 +1403,7 @@ const flagRemovalDate = defineRule({
           !direct &&
           !(
             identity?.name === "defineFlag" &&
-            /^@rat-stack\/(?:core\/flags|flags)$/u.test(identity.module)
+            /^@savour\/(?:core\/flags|flags)$/u.test(identity.module)
           )
         ) {
           return;
