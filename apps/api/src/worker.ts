@@ -1,9 +1,4 @@
-import {
-  Flags,
-  eventFlags,
-  eventsEnabled,
-  eventsIdentityMode,
-} from "@savour/core/flags";
+import { Flags, eventsEnabled, eventsIdentityMode } from "@savour/core/flags";
 import type { Flag } from "@savour/core/flags";
 import { Basin } from "@savour/events/basin";
 import { Stage } from "alchemy";
@@ -11,7 +6,7 @@ import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 
-import { apiApp, capturedApiApp } from "./app.js";
+import { apiApp, apiFlags, capturedApiApp } from "./app.js";
 
 const inBackground = (effect: Effect.Effect<void>) =>
   Effect.gen(function* registerBackgroundWork() {
@@ -22,7 +17,7 @@ const inBackground = (effect: Effect.Effect<void>) =>
 
 const readFlag = <A>(flag: Flag<A>) =>
   Flags.use((flags) => flags.get(flag, {}).pipe(Effect.orDie)).pipe(
-    Effect.provide(Flags.defaults(eventFlags))
+    Effect.provide(apiFlags)
   );
 
 const makeApiWorker = Effect.gen(function* makeApiWorker() {

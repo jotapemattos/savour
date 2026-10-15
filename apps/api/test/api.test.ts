@@ -2,11 +2,12 @@ import { NodeHttpServer } from "@effect/platform-node";
 import { describe, expect, it } from "@effect/vitest";
 import { HealthReport, healthNextActions } from "@savour/core";
 import { EventSinkMemory, memoryEventsLayer } from "@savour/events/memory";
-import { Effect, Layer, Schema } from "effect";
+import { ConfigProvider, Effect, Layer, Schema } from "effect";
 import { HttpClient, HttpRouter } from "effect/http";
+import { HttpApiClient } from "effect/http-api";
 import * as HttpServerRequest from "effect/http/HttpServerRequest";
 
-import { apiRoutes, capturedApiApp } from "../src/app.js";
+import { apiRoutes, capturedApiApp, http } from "../src/app.js";
 
 const decodeHealth = Schema.decodeUnknownEffect(HealthReport);
 
@@ -49,6 +50,26 @@ describe("savour api", () => {
         Object.keys((yield* decodeOpenApi(yield* response.json)).paths)
       ).toContain("/health");
     }).pipe(Effect.provide(ServedApi))
+  );
+
+  it.effect(
+    "reads EVENTS_ENABLED from the environment, not just the default",
+    () =>
+      Effect.gen(function* readsConfiguredFlag() {
+        const client = yield* HttpApiClient.make(http.api);
+
+        expect(
+          yield* client.capabilities.getFlag({
+            payload: { context: {}, name: "EVENTS_ENABLED" },
+          })
+        ).toBe(true);
+      }).pipe(
+        Effect.provide(ServedApi),
+        Effect.provideService(
+          ConfigProvider.ConfigProvider,
+          ConfigProvider.fromUnknown({ EVENTS_ENABLED: true })
+        )
+      )
   );
 
   it.effect("records one request event per HTTP request", () =>
