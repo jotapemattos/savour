@@ -28,8 +28,8 @@ import type {
   OutputOf,
   PathParamNames,
   PlainSchema,
+  RequirementsOf,
 } from "./contract.js";
-import type { RequirementsOf } from "./contract.js";
 import { inputJsonSchemaOf } from "./input-json-schema.js";
 
 export const GROUP = "capabilities";
