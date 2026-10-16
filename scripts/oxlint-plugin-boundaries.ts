@@ -50,7 +50,7 @@ const surfaceConstructorNames = new Set([
 ]);
 
 const browserContractModules = new Set([
-  "packages/capability/rpc-group",
+  "packages/capability/http-client",
   "packages/core/contracts",
   "packages/devtools/contracts",
 ]);
@@ -987,6 +987,50 @@ const noBrowserServerImports = defineRule({
   },
 });
 
+const isWebApp = (filename: string) => isWithin(filename, "apps/web/src");
+
+const webDomainModule = (filename: string, specifier: string) => {
+  const target = normalizeWorkspacePath(filename, specifier);
+
+  return (
+    browserCapabilityModule(filename, specifier) ||
+    (target !== null &&
+      (isWithin(target, "apps/api") ||
+        /(?:^|\/)(?:adapters?|stores?)(?:\/|$)/u.test(target)))
+  );
+};
+
+const noWebDomainImports = defineRule({
+  create(context) {
+    const filename = workspacePath(context.filename);
+
+    if (!isWebApp(filename)) {
+      return {};
+    }
+
+    const report = (node: ESTree.Node, source: ESTree.Expression) => {
+      const specifier = isStringModule(source);
+
+      if (specifier !== null && webDomainModule(filename, specifier)) {
+        context.report({ messageId: "webDomainImport", node });
+      }
+    };
+
+    return moduleSourceVisitors(context, report);
+  },
+  meta: {
+    docs: {
+      description:
+        "Keep handlers, stores, and adapters out of apps/web so its server functions and loaders reach capabilities only over HTTP.",
+    },
+    messages: {
+      webDomainImport:
+        "apps/web reaches capabilities only through the typed HTTP client. Import contracts from a browser-safe entry point; handlers, stores, and adapters stay behind the API.",
+    },
+    type: "problem",
+  },
+});
+
 const isGlobalFetch = (node: ESTree.Node, scope: Scope | null) =>
   node.type === "Identifier" &&
   node.name === "fetch" &&
@@ -1530,5 +1574,6 @@ export default definePlugin({
     "no-devtools-in-production": noDevtoolsInProduction,
     "no-feature-transport": noFeatureTransport,
     "no-hand-rolled-surface": noHandRolledSurface,
+    "no-web-domain-imports": noWebDomainImports,
   },
 });

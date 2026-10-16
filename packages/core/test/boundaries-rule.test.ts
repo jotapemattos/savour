@@ -43,6 +43,7 @@ const lintFixture = (area: string, source: string): LintResult => {
         "rat-stack-boundaries/no-devtools-in-production": "error",
         "rat-stack-boundaries/no-feature-transport": "error",
         "rat-stack-boundaries/no-hand-rolled-surface": "error",
+        "rat-stack-boundaries/no-web-domain-imports": "error",
       },
     })
   );
@@ -289,7 +290,7 @@ describe("architecture boundary rules", () => {
     (area) => {
       const result = lintFixture(
         area,
-        'import * as contracts from "@savour/core/contracts";\nimport { toRpcGroup } from "@savour/capability/rpc-group";\n\nexport const browserContract = { contracts, toRpcGroup };\n'
+        'import * as contracts from "@savour/core/contracts";\nimport { makeHttpApiClient } from "@savour/capability/http-client";\n\nexport const browserContract = { contracts, makeHttpApiClient };\n'
       );
 
       expect(result.status).toBe(0);
@@ -299,7 +300,7 @@ describe("architecture boundary rules", () => {
   it("resolves renamed workspace scopes for browser-safe contracts", () => {
     const result = lintFixture(
       "apps/cli/src/client",
-      'import * as contracts from "@sample/core/contracts";\nimport { toRpcGroup } from "@sample/capability/rpc-group";\n\nexport const browserContract = { contracts, toRpcGroup };\n'
+      'import * as contracts from "@sample/core/contracts";\nimport { makeHttpApiClient } from "@sample/capability/http-client";\n\nexport const browserContract = { contracts, makeHttpApiClient };\n'
     );
 
     expect(result.status).toBe(0);
@@ -320,6 +321,8 @@ describe("architecture boundary rules", () => {
       "an application capability handler",
       "../../../../site/src/capabilities/search.ts",
     ],
+    ["the RPC group the HTTP client replaced", "@savour/capability/rpc-group"],
+    ["the HTTP server projection", "@savour/capability/http-api"],
   ])("blocks %s from browser modules", (_name, specifier) => {
     const result = lintFixture(
       "apps/cli/src/client",
@@ -330,6 +333,46 @@ describe("architecture boundary rules", () => {
       result,
       "Feature and client modules can import only browser-safe contract entry points; capability handlers and other domain implementation modules stay server-side."
     );
+  });
+
+  it.each([
+    ["a core capability handler", "@savour/core/health"],
+    ["the core implementation barrel", "@savour/core"],
+    [
+      "the capability implementation entry point",
+      "@savour/capability/implement",
+    ],
+    ["the API app", "@savour/api/worker"],
+    ["a store", "../stores/visits.ts"],
+    ["an adapter", "../../adapters/neon.ts"],
+  ])(
+    "rejects %s from apps/web server functions and loaders",
+    (_name, specifier) => {
+      const result = lintFixture(
+        "apps/web/src/routes",
+        `import { createServerFn } from "@tanstack/react-start";\nimport * as domain from ${JSON.stringify(specifier)};\n\nexport const readHealth = createServerFn().handler(() => domain);\n`
+      );
+
+      expectRule(result, "rat-stack-boundaries(no-web-domain-imports)");
+    }
+  );
+
+  it("lets apps/web loaders reach capabilities through contracts and the HTTP client", () => {
+    const result = lintFixture(
+      "apps/web/src/routes",
+      'import { contracts } from "@savour/core/contracts";\nimport { makeHttpApiClient } from "@savour/capability/http-client";\nimport { createFileRoute } from "@tanstack/react-router";\n\nexport const Route = createFileRoute("/")({\n  loader: () => makeHttpApiClient("Savour", contracts, "/api"),\n});\n'
+    );
+
+    expect(result.status).toBe(0);
+  });
+
+  it("leaves domain imports outside apps/web to the other rules", () => {
+    const result = lintFixture(
+      "apps/api/src",
+      'import { health } from "@savour/core/health";\n\nexport const handler = health;\n'
+    );
+
+    expect(result.status).toBe(0);
   });
 
   it("keeps fetch calls out of feature modules", () => {
@@ -659,7 +702,7 @@ describe("architecture boundary rules", () => {
 
   it("allows devtools in a dev folder, the CLI, and tests", () => {
     const dev = lintFixture(
-      "apps/web/src/dev",
+      "apps/site/src/dev",
       'import { ratTestPerson, runAsPerson } from "@savour/auth/devtools";\nimport { devtools } from "@savour/devtools";\n\nexport const wiring = { devtools, ratTestPerson, runAsPerson };\n'
     );
 
