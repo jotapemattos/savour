@@ -90,6 +90,7 @@ export default defineConfig({
     "rat-stack-boundaries/no-cross-layer-imports": "error",
     "rat-stack-boundaries/no-devtools-in-production": "error",
     "rat-stack-boundaries/no-hand-rolled-surface": "error",
+    "rat-stack-boundaries/no-web-domain-imports": "error",
     "rat-stack-patterns/acquire-release-constructs-in-acquire-body": "error",
     "rat-stack-patterns/contract-binding-matches-name": "error",
     "rat-stack-patterns/flag-removal-date": "error",
