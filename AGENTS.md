@@ -26,5 +26,7 @@ Deliberate choices that override the starter's defaults. Everything else in rat-
 - The web app calls capabilities only through the HTTP client derived from each contract (Effect `HttpApiClient`), wrapped in TanStack Query, not browser RPC.
 - TanStack server functions and loaders only call that client. Handlers, stores and business rules never live in the web app, so a future mobile client can reach everything over HTTP.
 - The database is Neon Postgres reached through Cloudflare Hyperdrive, not D1. Each preview stage gets its own Neon branch.
+- HTTP is the only surface for now. Contracts are projected to HTTP through `packages/capability`; CLI, MCP, RPC and code mode are not built. A new surface comes back from the same contracts when a card needs it.
+- The repo keeps only the capability layer, the Alchemy Stack and the fence. rat-stack's optional packages (`auth`, `database`, `events`, `flags`, `devtools`) and its `.brain/` and `skills/` were dropped; a card that needs one brings it back on purpose. The rat-stack rules and skills are read from the MCP corpus.
 
 Skills: `add-a-capability`, `add-a-lifecycle-machine`, `add-a-store`, `learn-alchemy`, `test-behaviour`, `uncomplect`, `investigate-a-failure`, `ship`.

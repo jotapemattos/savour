@@ -1,6 +1,6 @@
 # Provenance
 
-Savour was imported from [joelhooks/rat-stack](https://github.com/joelhooks/rat-stack) at commit `c2110a3a8a9afa3056a522f4862b2e5497c274cf` (MIT, see `LICENSE`). The import kept the capability layer, the fence, and the `auth`, `database`, `devtools`, `events` and `flags` packages. It dropped rat-stack's own site, Foldkit web app, deploy pipeline and domain packages, and renamed the workspace scope from `@rat-stack/` to `@savour/`. `.brain/` and `skills/` are kept as upstream reference material and still name the `@rat-stack/` packages they describe.
+Savour was imported from [joelhooks/rat-stack](https://github.com/joelhooks/rat-stack) at commit `c2110a3a8a9afa3056a522f4862b2e5497c274cf` (MIT, see `LICENSE`). Savour keeps only what it needs to build with Effect and Alchemy: the capability contract layer with its HTTP projection, the Alchemy Stack, and the fence. Everything else was dropped, including rat-stack's site, web app, CLI, MCP and code-mode surfaces, its optional packages, and its `.brain/` and `skills/` reference material. The workspace scope was renamed from `@rat-stack/` to `@savour/`.
 
 The table below is rat-stack's own credit record, kept as imported. Entries for files that Savour no longer contains stay as history.
 

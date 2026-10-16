@@ -2,25 +2,19 @@
 
 A Letterboxd for restaurants: log visits, keep a diary and a want-to-go list, and follow friends whose taste you trust. The product scope lives in [`docs/product/savour-v1.md`](docs/product/savour-v1.md).
 
-Savour is built on the [rat-stack](https://ratstack.sh) scaffold: Effect for typed work and errors, XState for lifecycles, one schema-typed contract per capability projected to CLI, HTTP and MCP, Alchemy for Cloudflare infrastructure, and a lint and type fence that rejects banned code. Project rules and the deliberate deviations from the starter are in [`AGENTS.md`](AGENTS.md). Credit for imported code is in [`PROVENANCE.md`](PROVENANCE.md).
+Savour is built with Effect and Alchemy, following the [rat-stack](https://ratstack.sh) rules: typed work and errors in Effect, one schema-typed contract per capability, Cloudflare infrastructure declared with Alchemy, and a lint and type fence that rejects banned code. Project rules and the deliberate deviations from the starter are in [`AGENTS.md`](AGENTS.md). Credit for imported code is in [`PROVENANCE.md`](PROVENANCE.md).
 
 ## Prerelease pins
 
-Some of the stack runs on prerelease versions, pinned exactly:
-
-- XState `6.0.0-alpha.65` owns lifecycle states.
-- `@xstate/effect` `0.1.0-alpha.7` runs machines as scoped Effects through `createEffectActor`.
-- Alchemy `2.0.0-beta.83` declares the Cloudflare Stack in `apps/infra/alchemy.run.ts`.
+Alchemy `2.0.0-beta.83` declares the Cloudflare Stack in `apps/infra/alchemy.run.ts`. It is pinned exactly.
 
 ## Layout
 
-- `apps/api`: the Cloudflare Worker that serves every capability over HTTP, with `/openapi.json` and `/docs`.
-- `apps/cli`: the local composition root. `serve`, `mcp`, `openapi`, `catalog`, and one command per capability.
+- `apps/api`: the Cloudflare Worker that serves every capability over HTTP, with `/openapi.json`.
 - `apps/infra`: the Alchemy Stack.
-- `packages/capability`: `defineContract`, `implement`, and the CLI, HTTP, MCP, RPC and code-mode projections.
-- `packages/core`: Savour's contracts and job-shaped ports. Adapters stay outside it.
-- `packages/auth`, `packages/database`, `packages/events`, `packages/flags`, `packages/devtools`: auth, persistence, request analytics, feature flags, and local call recording.
-- `.brain/` and `skills/`: rat-stack's reference material and agent playbooks, kept as upstream documentation.
+- `packages/core`: Savour's contracts and capabilities. Adapters stay outside it.
+- `packages/capability`: `defineContract`, `implement`, and the HTTP projection.
+- `scripts/`, `tools/`, `oxlint.config.ts`, `lefthook.yml`: the fence.
 
 ## Getting started
 
@@ -28,14 +22,6 @@ Some of the stack runs on prerelease versions, pinned exactly:
 nvm use
 pnpm install
 pnpm turbo run check test build
-```
-
-Run the capabilities locally:
-
-```sh
-pnpm cli health --json
-pnpm cli serve --port 3000
-pnpm cli mcp
 ```
 
 ## Validation

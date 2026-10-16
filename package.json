@@ -10,7 +10,6 @@
     "alchemy": "pnpm --filter @savour/infra exec alchemy",
     "build": "turbo run build",
     "check": "pnpm run lockfile:check && varlock load && turbo run typecheck && ultracite check && oxfmt --check .",
-    "cli": "turbo run build --filter=@savour/cli && node apps/cli/dist/cli.js",
     "env:check": "varlock load",
     "fix": "ultracite fix && oxfmt .",
     "lint": "ultracite check && oxfmt --check .",
@@ -25,8 +24,7 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "typecheck-scripts": "tsc --noEmit -p tsconfig.json",
-    "vendor:agent-sources": "./scripts/vendor-agent-sources.sh",
-    "find-peers": "node scripts/find-peers.ts"
+    "vendor:agent-sources": "./scripts/vendor-agent-sources.sh"
   },
   "devDependencies": {
     "@effect/tsgo": "0.51.1",

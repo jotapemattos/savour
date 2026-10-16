@@ -4,14 +4,9 @@ set -euo pipefail
 step="starting"
 tmp_parent="$(mktemp -d "${TMPDIR:-/tmp}/savour-acceptance.XXXXXX")"
 tmp="$tmp_parent/clone"
-server_pid=""
 
 cleanup() {
   local status=$?
-  if [[ -n "$server_pid" ]]; then
-    kill "$server_pid" 2>/dev/null || true
-    wait "$server_pid" 2>/dev/null || true
-  fi
   if [[ "${KEEP:-0}" == "1" ]]; then
     printf 'KEEP=1; preserved acceptance copy at %s\n' "$tmp_parent" >&2
   else
@@ -140,90 +135,15 @@ if ! pnpm turbo run check test build; then
   fail "pnpm turbo run check test build failed"
 fi
 
-step="CLI capability help"
-help_output="$tmp/cli-help.txt"
-if ! node apps/cli/dist/cli.js --help >"$help_output" 2>&1; then
-  cat "$help_output" >&2
-  fail "CLI --help failed"
-fi
-cat "$help_output"
-if ! grep -Fq "acceptanceProbe" "$help_output"; then
-  fail "CLI --help did not register acceptanceProbe"
-fi
-printf 'CLI: acceptanceProbe appears in --help\n'
-
 step="HTTP capability route"
-port="$(node -e 'const net = require("node:net"); const server = net.createServer(); server.listen(0, "127.0.0.1", () => { console.log(server.address().port); server.close(); });')"
-http_log="$tmp/http.log"
-node apps/cli/dist/cli.js serve --port "$port" >"$http_log" 2>&1 &
-server_pid=$!
-ready=0
-for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-  if curl --silent --fail --max-time 2 "http://127.0.0.1:${port}/openapi.json" >/dev/null; then
-    ready=1
-    break
-  fi
-  if ! kill -0 "$server_pid" 2>/dev/null; then
-    cat "$http_log" >&2
-    fail "serve exited before becoming ready"
-  fi
-  sleep 1
-done
-if [[ "$ready" != "1" ]]; then
-  cat "$http_log" >&2
-  fail "serve did not become ready on port ${port}"
-fi
-http_body="$tmp/http.json"
-if ! curl --silent --show-error --fail --request POST "http://127.0.0.1:${port}/acceptanceProbe" \
-  --header 'content-type: application/json' --data '{"value":"acceptance-ok"}' >"$http_body"; then
-  cat "$http_body" >&2 || true
-  fail "POST /acceptanceProbe failed"
-fi
-cat "$http_body"
-if ! grep -Fq 'acceptance-ok' "$http_body"; then
-  fail "HTTP response did not contain acceptance-ok"
-fi
 openapi_body="$tmp/openapi.json"
-if ! curl --silent --show-error --fail "http://127.0.0.1:${port}/openapi.json" >"$openapi_body"; then
-  fail "GET /openapi.json failed"
+if ! node --input-type=module -e 'const { http } = await import("./apps/api/dist/app.js"); console.log(JSON.stringify(http.openApi()));' >"$openapi_body" 2>&1; then
+  cat "$openapi_body" >&2
+  fail "could not print the api OpenAPI document"
 fi
 if ! grep -Fq '"/acceptanceProbe"' "$openapi_body"; then
+  cat "$openapi_body" >&2
   fail "OpenAPI did not document /acceptanceProbe"
 fi
-printf 'HTTP: /acceptanceProbe and /openapi.json passed\n'
-kill "$server_pid" 2>/dev/null || true
-wait "$server_pid" 2>/dev/null || true
-server_pid=""
-
-step="MCP capability tool"
-mcp_output="$tmp/mcp.jsonl"
-mcp_error="$tmp/mcp.stderr"
-mcp_status=0
-if printf '%s\n' \
-  '{"id":1,"jsonrpc":"2.0","method":"initialize","params":{"capabilities":{},"clientInfo":{"name":"acceptance","version":"0.0.0"},"protocolVersion":"2025-06-18"}}' \
-  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
-  '{"id":2,"jsonrpc":"2.0","method":"tools/list","params":{}}' \
-  | node apps/cli/dist/cli.js mcp >"$mcp_output" 2>"$mcp_error"; then
-  :
-else
-  mcp_status=$?
-fi
-cat "$mcp_output"
-if ! grep -Fq 'acceptanceProbe' "$mcp_output"; then
-  cat "$mcp_error" >&2 || true
-  fail "MCP tools/list did not include acceptanceProbe (exit ${mcp_status})"
-fi
-printf 'MCP: acceptanceProbe appears in tools/list\n'
-
-step="code-mode declaration"
-types_output="$tmp/types.txt"
-if ! node apps/cli/dist/cli.js catalog --types >"$types_output" 2>&1; then
-  cat "$types_output" >&2
-  fail "catalog --types failed"
-fi
-if ! grep -Fq 'readonly acceptanceProbe' "$types_output"; then
-  cat "$types_output" >&2
-  fail "catalog --types did not include acceptanceProbe"
-fi
-printf 'code mode: acceptanceProbe appears in catalog --types\n'
+printf 'HTTP: /acceptanceProbe appears in the api OpenAPI document\n'
 printf 'cold-clone acceptance passed\n'
