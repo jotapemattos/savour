@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --background: oklch(0.99 0.004 75);
+  --foreground: oklch(0.2 0.01 60);
+  --muted: oklch(0.96 0.006 75);
+  --muted-foreground: oklch(0.5 0.012 60);
+  --border: oklch(0.91 0.008 75);
+  --primary: oklch(0.52 0.15 35);
+  --primary-foreground: oklch(0.99 0.004 75);
+  --success: oklch(0.62 0.15 150);
+  --warning: oklch(0.72 0.15 75);
+  --radius: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.17 0.006 60);
+    --foreground: oklch(0.96 0.005 75);
+    --muted: oklch(0.23 0.008 60);
+    --muted-foreground: oklch(0.7 0.01 70);
+    --border: oklch(0.28 0.008 60);
+    --primary: oklch(0.7 0.14 40);
+    --primary-foreground: oklch(0.17 0.006 60);
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --radius-lg: var(--radius);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior: none;
+    color-scheme: light dark;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
