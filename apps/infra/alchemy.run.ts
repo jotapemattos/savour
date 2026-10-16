@@ -1,11 +1,16 @@
 import Api from "@savour/api/worker";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
+import * as Neon from "alchemy/Neon";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 
 export default Alchemy.Stack(
   "Savour",
-  { providers: Cloudflare.providers(), state: Cloudflare.state() },
+  {
+    providers: Layer.merge(Cloudflare.providers(), Neon.providers()),
+    state: Cloudflare.state(),
+  },
   Effect.gen(function* stack() {
     const api = yield* Api;
 

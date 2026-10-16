@@ -3,10 +3,14 @@ import { expect, it } from "@effect/vitest";
 import { AuthProviders, Stage } from "alchemy";
 import { AlchemyContextLive } from "alchemy/AlchemyContext";
 import { tryFindProviderRegistrationByType } from "alchemy/Provider";
-import { Effect, Layer, Option } from "effect";
+import { Effect, Layer, Option, Schema } from "effect";
 import * as HttpClient from "effect/http/HttpClient";
 
 import stack from "../alchemy.run.js";
+
+const decodeBranchName = Schema.decodeUnknownSync(
+  Schema.Struct({ name: Schema.String })
+);
 
 const services = Layer.mergeAll(
   AlchemyContextLive.pipe(Layer.provideMerge(NodeServices.layer)),
@@ -21,7 +25,7 @@ const services = Layer.mergeAll(
 );
 
 it.effect(
-  "the Stack declares the Api and Web Workers and a provider for every resource",
+  "the staging Stack declares the Workers, a Neon branch behind Hyperdrive, no D1, and a provider for every resource",
   () =>
     Effect.gen(function* checkStackProviders() {
       const compiled = yield* stack.pipe(Effect.provide(services));
@@ -32,6 +36,24 @@ it.effect(
           .filter((resource) => resource.Type === "Cloudflare.Worker")
           .map((resource) => resource.LogicalId)
       ).toStrictEqual(["Api", "Web"]);
+
+      expect(
+        resources
+          .filter((resource) => resource.Type !== "Cloudflare.Worker")
+          .map((resource) => [resource.LogicalId, resource.Type])
+      ).toStrictEqual([
+        ["Neon", "Neon.Project"],
+        ["Database", "Neon.Branch"],
+        ["Hyperdrive", "Cloudflare.Hyperdrive"],
+      ]);
+      expect(decodeBranchName(compiled.resources.Database?.Props).name).toBe(
+        "staging"
+      );
+      expect(
+        resources.filter((resource) =>
+          resource.Type.startsWith("Cloudflare.D1")
+        )
+      ).toStrictEqual([]);
 
       for (const resource of resources) {
         const provider = yield* tryFindProviderRegistrationByType(

@@ -1,12 +1,15 @@
-import * as Schema from "effect/Schema";
+export { PreviewStage } from "@savour/api/database-resources";
 
-export const PreviewStage = Schema.String.check(
-  Schema.isPattern(/^pr-[1-9][0-9]*$/u)
-);
+const previewResourceTypes = new Map([
+  ["Api", "Cloudflare.Worker"],
+  ["Database", "Neon.Branch"],
+  ["Hyperdrive", "Cloudflare.Hyperdrive"],
+]);
 
 export const previewResourcesAllowed = (
   resources: Readonly<Record<string, { readonly Type: string }>>
 ): boolean =>
+  Object.keys(resources).length === previewResourceTypes.size &&
   Object.entries(resources).every(
-    ([id, resource]) => resource.Type === "Cloudflare.Worker" && id === "Api"
-  ) && Object.keys(resources).length === 1;
+    ([id, resource]) => previewResourceTypes.get(id) === resource.Type
+  );

@@ -8,6 +8,11 @@
       "types": "./src/worker.ts",
       "import": "./src/worker.ts",
       "default": "./src/worker.ts"
+    },
+    "./database-resources": {
+      "types": "./src/database-resources.ts",
+      "import": "./src/database-resources.ts",
+      "default": "./src/database-resources.ts"
     }
   },
   "scripts": {
