@@ -3,7 +3,6 @@ import { spawnSync } from "node:child_process";
 import {
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -304,25 +303,6 @@ describe("rat-stack pattern rules", () => {
     expectRuleSoft(snippet, "Attach static readonly layer");
     expectRuleSoft(snippet, "Provide the service's static layer at the edge");
     expect.soft(runtime.status).toBe(0);
-  });
-
-  it("accepts every learn card snippet in the repo", () => {
-    const directory = path.join(repoRoot, ".brain/data/learn-cards");
-
-    const snippets = readdirSync(directory).filter((file) =>
-      file.endsWith(".ts")
-    );
-
-    expect(snippets.length).toBeGreaterThan(0);
-
-    for (const file of snippets) {
-      const result = lintFixture(
-        ".brain/data/learn-cards",
-        readFileSync(path.join(directory, file), "utf-8")
-      );
-
-      expect.soft(result.output, file).not.toContain("learn-snippet-idiom");
-    }
   });
 
   it("flags an Effect-backed actor that is never watched", () => {

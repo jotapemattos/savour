@@ -1,9 +1,4 @@
-import { flagCapabilities } from "./flag-capabilities.js";
 import { health } from "./health-capabilities.js";
-
-export { AppConfig } from "./app-config.js";
-
-export { ConfigService } from "./config-service.js";
 
 export {
   HealthReport,
@@ -13,4 +8,4 @@ export {
   healthNextActions,
 } from "./health-capabilities.js";
 
-export const capabilities = [health, ...flagCapabilities] as const;
+export const capabilities = [health] as const;
