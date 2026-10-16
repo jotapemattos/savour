@@ -17,6 +17,7 @@
           "effect/cli/Flag",
           "effect/http-api/HttpApi",
           "effect/http-api/HttpApiBuilder",
+          "effect/http-api/HttpApiClient",
           "effect/http-api/HttpApiEndpoint",
           "effect/http-api/HttpApiError",
           "effect/http-api/HttpApiGroup",
