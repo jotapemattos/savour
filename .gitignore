@@ -1,0 +1,29 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+.rat/
+**/.alchemy/bundles/
+**/.alchemy/local/
+**/.alchemy/log/
+**/.alchemy/version-check.json
+.pi/notes-bridge/
+
+# Shallow source mirrors (populate via ./scripts/vendor-agent-sources.sh)
+.agent_sources/github.com/
+.agent-sources/
+
+.pi-subagents/
+*.log
+.DS_Store
+
+# varlock: keep .env.schema, exclude local values and generated types
+.env
+.env.local
+.env.*.local
+env.d.ts
+
+# build temp directories left by an interrupted generate
+
+# Muster packet reports and notes in worker clones
+.pi/muster/

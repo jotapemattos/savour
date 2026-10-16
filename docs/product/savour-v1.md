@@ -91,7 +91,7 @@ The founder and their circle of friends, based in **Bragança Paulista** and **S
 ## Open questions
 
 | Question | Owner | Status |
-|---|---|---|
+| --- | --- | --- |
 | Which places provider (Google Places, Foursquare, OpenStreetMap, …), and does its coverage of Bragança Paulista meet the search acceptance criteria? | Tech lead — provider choice | Open |
 | Which sign-in method (email + password, magic link, Google, …)? | Founder — onboarding experience | Open |
 | Account deletion and data export: needed for v1, given that profiles are public and Brazil's data-protection law (LGPD) applies? | Founder — legal/privacy | Open |

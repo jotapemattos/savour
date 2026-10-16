@@ -1,11 +1,12 @@
 # Validation
 
-The project has no code yet, so there are no lint, typecheck or test commands. Fill them in once the toolchain exists. Until then, every handoff must say "no validation configured".
+Commands come from the rat-stack scaffold. The gate runs all of them and must pass before every push.
 
 ```
-lint: none
-typecheck: none
-test: none
+lint: pnpm lint
+typecheck: pnpm typecheck
+test: pnpm test
+gate: pnpm turbo run check test build
 pr_size_budget: 500            # max changed production lines per PR (tests/fixtures/generated excluded)
 guidelines: AGENTS.md
 ```

@@ -1,0 +1,62 @@
+{
+  "name": "savour",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Savour: a Letterboxd for restaurants, built on the rat-stack scaffold.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "acceptance:cold-clone": "bash scripts/acceptance-cold-clone.sh",
+    "alchemy": "pnpm --filter @savour/infra exec alchemy",
+    "build": "turbo run build",
+    "check": "pnpm run lockfile:check && varlock load && turbo run typecheck && ultracite check && oxfmt --check .",
+    "env:check": "varlock load",
+    "fix": "ultracite fix && oxfmt .",
+    "lint": "ultracite check && oxfmt --check .",
+    "lockfile:check": "pnpm --config.optimistic-repeat-install=false install --frozen-lockfile --offline --lockfile-only --ignore-scripts",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "infra:deploy": "pnpm --filter @savour/infra deploy",
+    "infra:destroy": "pnpm --filter @savour/infra destroy",
+    "infra:dev": "pnpm --filter @savour/infra dev",
+    "infra:plan": "pnpm --filter @savour/infra plan",
+    "prepare": "effect-tsgo patch && if git rev-parse --git-dir >/dev/null 2>&1; then lefthook install; fi",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "typecheck-scripts": "tsc --noEmit -p tsconfig.json",
+    "vendor:agent-sources": "./scripts/vendor-agent-sources.sh"
+  },
+  "devDependencies": {
+    "@effect/tsgo": "0.51.1",
+    "@oxlint/plugins": "1.88.0",
+    "@types/node": "24.13.6",
+    "effect": "4.0.0",
+    "lefthook": "2.1.14",
+    "oxfmt": "0.68.0",
+    "oxlint": "1.88.0",
+    "oxlint-tsgolint": "7.0.2003",
+    "portless": "0.15.6",
+    "turbo": "2.11.2",
+    "typescript": "7.0.2",
+    "ultracite": "7.12.0",
+    "varlock": "1.23.0",
+    "vitest": "5.0.3"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.3.0",
+      "onFail": "error"
+    },
+    "runtime": {
+      "name": "node",
+      "version": ">=24.18.0",
+      "onFail": "warn"
+    }
+  },
+  "engines": {
+    "node": ">=24.18.0",
+    "pnpm": ">=11.1.2"
+  },
+  "packageManager": "pnpm@11.3.0"
+}
