@@ -36,7 +36,10 @@
           "effect/process/ChildProcessSpawner",
           "effect/rpc/RpcClient",
           "effect/rpc/RpcSerialization",
-          "effect/rpc/RpcServer"
+          "effect/reactivity/Reactivity",
+          "effect/rpc/RpcServer",
+          "effect/sql/SqlClient",
+          "effect/sql/SqlConnection"
         ]
       }
     ],
