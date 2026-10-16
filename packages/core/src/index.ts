@@ -1,5 +1,9 @@
 import { health } from "./health-capabilities.js";
 
+export { DatabaseUnavailable } from "./database-health-contracts.js";
+
+export { Database, type DatabaseService } from "./database.js";
+
 export {
   HealthReport,
   NextAction,
