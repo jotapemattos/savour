@@ -48,6 +48,11 @@
       "types": "./src/http-api.ts",
       "import": "./dist/http-api.js",
       "default": "./dist/http-api.js"
+    },
+    "./http-client": {
+      "types": "./src/http-client.ts",
+      "import": "./dist/http-client.js",
+      "default": "./dist/http-client.js"
     }
   },
   "scripts": {

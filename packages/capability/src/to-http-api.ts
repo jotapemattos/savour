@@ -182,11 +182,13 @@ const apiFor = <const Id extends string, Group extends HttpApiGroup.Constraint>(
     .add(group)
     .annotateMerge(OpenApi.annotations({ title: id }));
 
-export type EndpointsOf<Caps extends readonly AnyCapability[]> = {
+type Projectable = AnyCapability | AnyContract;
+
+export type EndpointsOf<Caps extends readonly Projectable[]> = {
   readonly [K in keyof Caps]: EndpointOf<Caps[K]>;
 };
 
-type UnmiddledGroupOf<Caps extends readonly AnyCapability[]> = ReturnType<
+type UnmiddledGroupOf<Caps extends readonly Projectable[]> = ReturnType<
   typeof groupFor<
     EndpointsOf<Caps> extends readonly [
       HttpApiEndpoint.Constraint,
@@ -198,7 +200,7 @@ type UnmiddledGroupOf<Caps extends readonly AnyCapability[]> = ReturnType<
 >;
 
 export type GroupOf<
-  Caps extends readonly AnyCapability[],
+  Caps extends readonly Projectable[],
   Middleware extends HttpApiMiddleware.AnyId = never,
 > = [Middleware] extends [never]
   ? UnmiddledGroupOf<Caps>
@@ -209,7 +211,7 @@ export type GroupOf<
 
 export type ApiOf<
   Id extends string,
-  Caps extends readonly AnyCapability[],
+  Caps extends readonly Projectable[],
   Middleware extends HttpApiMiddleware.AnyId = never,
 > = ReturnType<typeof apiFor<Id, GroupOf<Caps, Middleware>>>;
 
@@ -454,6 +456,48 @@ const withPrefix = <Id extends string>(
   >;
 };
 
+const endpointOf = (
+  contract: AnyContract,
+  hostErrors: readonly Schema.Top[]
+): HttpApiEndpoint.Constraint => {
+  const error = [
+    HttpApiError.BadRequestNoContent,
+    ...httpFailure(contract),
+    ...hostErrors,
+  ];
+
+  return contract.http === undefined
+    ? post(contract.name, `/${contract.name}`, {
+        error,
+        payload: contract.input,
+        success: contract.output,
+      })
+    : routedEndpoint(contract, contract.http, error);
+};
+
+export const httpApiOf = <
+  const Id extends string,
+  const Contracts extends readonly [AnyContract, ...AnyContract[]],
+>(
+  id: Id,
+  contracts: Contracts
+): ApiOf<Id, Contracts> => {
+  const [first, ...rest] = contracts.map((contract) =>
+    endpointOf(contract, [])
+  );
+
+  if (first === undefined) {
+    throw new Error("httpApiOf needs at least one contract");
+  }
+
+  // SAFETY: each endpoint is built by `endpointOf` from the contract at the same index, which is what `EndpointOf` computes per contract; a mapped array cannot carry that per-index type.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions
+  return apiFor(id, groupFor(first, ...rest)) as unknown as ApiOf<
+    Id,
+    Contracts
+  >;
+};
+
 export const toHttpApi = <
   const Id extends string,
   const Caps extends readonly [AnyCapability, ...AnyCapability[]],
@@ -467,23 +511,9 @@ export const toHttpApi = <
 ): HttpApiProjection<Id, Caps, MiddlewareOf<Hooks>> => {
   const hostErrors = options?.errors ?? [];
 
-  const endpoints = capabilities.map(({ contract }) => {
-    const error = [
-      HttpApiError.BadRequestNoContent,
-      ...httpFailure(contract),
-      ...hostErrors,
-    ];
-
-    return contract.http === undefined
-      ? post(contract.name, `/${contract.name}`, {
-          error,
-          payload: contract.input,
-          success: contract.output,
-        })
-      : routedEndpoint(contract, contract.http, error);
-  });
-
-  const [first, ...rest] = endpoints;
+  const [first, ...rest] = capabilities.map(({ contract }) =>
+    endpointOf(contract, hostErrors)
+  );
 
   if (first === undefined) {
     throw new Error("toHttpApi needs at least one capability");
