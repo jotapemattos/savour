@@ -21,7 +21,7 @@ const services = Layer.mergeAll(
 );
 
 it.effect(
-  "the Stack declares one Api Worker and a provider for every resource",
+  "the Stack declares the Api and Web Workers and a provider for every resource",
   () =>
     Effect.gen(function* checkStackProviders() {
       const compiled = yield* stack.pipe(Effect.provide(services));
@@ -31,7 +31,7 @@ it.effect(
         resources
           .filter((resource) => resource.Type === "Cloudflare.Worker")
           .map((resource) => resource.LogicalId)
-      ).toStrictEqual(["Api"]);
+      ).toStrictEqual(["Api", "Web"]);
 
       for (const resource of resources) {
         const provider = yield* tryFindProviderRegistrationByType(
