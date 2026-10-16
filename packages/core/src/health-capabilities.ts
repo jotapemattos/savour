@@ -15,6 +15,12 @@ export const healthNextActions = [
     href: "/openapi.json",
     rel: "describedby",
   },
+  {
+    description:
+      "Check that the API can reach its Postgres database with `select 1`.",
+    href: "/health/database",
+    rel: "related",
+  },
 ] as const;
 
 export const health = implement(healthContract, () =>
