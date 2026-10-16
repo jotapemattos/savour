@@ -44,45 +44,10 @@
       "import": "./dist/implement.js",
       "default": "./dist/implement.js"
     },
-    "./toolkit": {
-      "types": "./src/toolkit.ts",
-      "import": "./dist/toolkit.js",
-      "default": "./dist/toolkit.js"
-    },
     "./http-api": {
       "types": "./src/http-api.ts",
       "import": "./dist/http-api.js",
       "default": "./dist/http-api.js"
-    },
-    "./rpc": {
-      "types": "./src/rpc.ts",
-      "import": "./dist/rpc.js",
-      "default": "./dist/rpc.js"
-    },
-    "./rpc-group": {
-      "types": "./src/rpc-group.ts",
-      "import": "./dist/rpc-group.js",
-      "default": "./dist/rpc-group.js"
-    },
-    "./sandbox-port": {
-      "types": "./src/sandbox-port.ts",
-      "import": "./dist/sandbox-port.js",
-      "default": "./dist/sandbox-port.js"
-    },
-    "./sandbox": {
-      "types": "./src/sandbox-service.ts",
-      "import": "./dist/sandbox-service.js",
-      "default": "./dist/sandbox-service.js"
-    },
-    "./code-mode/execute": {
-      "types": "./src/to-code-mode.ts",
-      "import": "./dist/to-code-mode.js",
-      "default": "./dist/to-code-mode.js"
-    },
-    "./code-mode": {
-      "types": "./src/code-mode.ts",
-      "import": "./dist/code-mode.js",
-      "default": "./dist/code-mode.js"
     }
   },
   "scripts": {

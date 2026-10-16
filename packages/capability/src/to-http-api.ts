@@ -1,4 +1,4 @@
-// @effect-diagnostics anyUnknownInErrorContext:off unsafeEffectTypeAssertion:off missingEffectContext:off -- See to-toolkit.ts: a projection over a heterogeneous list erases error and requirement types at the boundary and recovers them for callers.
+// @effect-diagnostics anyUnknownInErrorContext:off unsafeEffectTypeAssertion:off missingEffectContext:off -- A projection over a heterogeneous list erases error and requirement types at the boundary and recovers them for callers.
 import { Data, Effect, Layer, Predicate, Schema, SchemaAST } from "effect";
 import type { Context, JsonSchema } from "effect";
 import { HttpServerRequest } from "effect/http";
@@ -29,8 +29,8 @@ import type {
   PathParamNames,
   PlainSchema,
 } from "./contract.js";
+import type { RequirementsOf } from "./contract.js";
 import { inputJsonSchemaOf } from "./input-json-schema.js";
-import type { RequirementsOf } from "./to-toolkit.js";
 
 export const GROUP = "capabilities";
 

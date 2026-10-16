@@ -41,46 +41,6 @@ export { aroundHandlers, implement } from "./implement.js";
 export { Approval, ApprovalDenied, type ApprovalService } from "./approval.js";
 
 export {
-  searchCatalog,
-  signatureOf,
-  toCatalog,
-  toTypeScript,
-  type Catalog,
-  type CatalogEntry,
-  type SearchMatch,
-} from "./catalog.js";
-
-export {
-  Sandbox,
-  SandboxError,
-  SandboxDiagnostic,
-  type Invoke,
-  type InvokeOutcome,
-  type SandboxRun,
-  type SandboxLimits,
-} from "./sandbox-service.js";
-
-export {
-  layerSubprocess,
-  type SubprocessOptions,
-} from "./sandbox-subprocess.js";
-
-export {
-  ExecuteInput,
-  ExecuteResult,
-  SearchResult,
-  toCodeMode,
-  invokerFor,
-  toExecuteCapability,
-  type CodeModeOptions,
-  type CodeModeProjection,
-  type DeclarationPlacement,
-  type ExecuteOptions,
-} from "./to-code-mode.js";
-
-export { toCommand, type ToCommandOptions } from "./to-command.js";
-
-export {
   GROUP as HTTP_API_GROUP,
   toHttpApi,
   type HttpApiProjection,
@@ -92,18 +52,3 @@ export {
   type MiddlewareOf,
   type ProvideMiddleware,
 } from "./to-http-api.js";
-
-export {
-  toToolkit,
-  type ToolkitProjection,
-  type ToolsOf,
-} from "./to-toolkit.js";
-
-export { toRpc, type ContractsOf, type RpcProjection } from "./to-rpc.js";
-
-export {
-  toRpcGroup,
-  type RpcGroupProjection,
-  type RpcOf,
-  type RpcsOf,
-} from "./to-rpc-group.js";
