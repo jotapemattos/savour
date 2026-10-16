@@ -28,3 +28,6 @@ env.d.ts
 
 # Muster packet reports and notes in worker clones
 .pi/muster/
+
+# Local chaos-engineering reports
+chaos-reports/

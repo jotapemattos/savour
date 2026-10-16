@@ -25,6 +25,7 @@ export default defineConfig({
         extends: true,
         test: {
           environment: "node",
+          fileParallelism: false,
           include: ["test/**/*.test.ts"],
           name: "worker",
         },
