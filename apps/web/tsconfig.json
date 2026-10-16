@@ -21,6 +21,7 @@
           "effect/http-api/HttpApiClient",
           "effect/http/FetchHttpClient",
           "effect/http/HttpClient",
+          "effect/http/HttpClientRequest",
           "effect/http/HttpClientResponse"
         ]
       }
