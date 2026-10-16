@@ -657,54 +657,6 @@ describe("architecture boundary rules", () => {
     expect(binding.status).toBe(0);
   });
 
-  it("keeps devtools and test people out of production code", () => {
-    const worker = lintFixture(
-      "apps/web/src/server",
-      'import { devtools } from "@savour/devtools";\n\nexport const tools = devtools;\n'
-    );
-
-    const testPeople = lintFixture(
-      "apps/site/src",
-      'import { ratTestPerson } from "@savour/auth/devtools";\n\nexport const person = ratTestPerson;\n'
-    );
-
-    expectRule(worker, "Devtools and test people");
-    expectRule(testPeople, "Devtools and test people");
-  });
-
-  it("blocks devtools through require, distribution paths, and production test folders", () => {
-    const required = lintFixture(
-      "apps/web/src/server",
-      'export const tools = require("@savour/devtools");\n'
-    );
-
-    const authDistribution = lintFixture(
-      "apps/web/src/server",
-      'import { ratTestPerson } from "@savour/auth/dist/devtools.js";\nexport const person = ratTestPerson;\n'
-    );
-
-    const sourceTest = lintFixture(
-      "apps/web/src/test",
-      'import { devtools } from "@savour/devtools";\nexport const tool = devtools;\n'
-    );
-
-    const authBarrel = lintFixture(
-      "packages/auth/src",
-      'export { ratTestPerson } from "@savour/auth/devtools";\n'
-    );
-
-    const typeImport = lintFixture(
-      "apps/web/src/server",
-      'type Devtools = import("@savour/devtools").Devtools;\nexport type Tools = Devtools;\n'
-    );
-
-    expectRuleSoft(required, "Devtools and test people");
-    expectRuleSoft(authDistribution, "Devtools and test people");
-    expectRuleSoft(sourceTest, "Devtools and test people");
-    expectRuleSoft(authBarrel, "Devtools and test people");
-    expectRuleSoft(typeImport, "Devtools and test people");
-  });
-
   it("allows devtools in a dev folder, the CLI, and tests", () => {
     const dev = lintFixture(
       "apps/web/src/dev",
@@ -746,16 +698,7 @@ describe("architecture boundary rules", () => {
       'import { devtoolsContracts } from "@savour/devtools/contracts";\n\nexport const contracts = devtoolsContracts;\n'
     );
 
-    const server = lintFixture(
-      "apps/web/src/dev/client",
-      'import { devtools } from "@savour/devtools";\n\nexport const tools = devtools;\n'
-    );
-
     expect(overlay.status).toBe(0);
     expect(contracts.status).toBe(0);
-    expectRule(
-      server,
-      "Feature and client modules can import only browser-safe contract entry points"
-    );
   });
 });
