@@ -129,6 +129,14 @@ const normalizeWorkspacePath = (
     );
   }
 
+  const appAlias = /^apps\/(?<app>[^/]+)\//u.exec(filename)?.groups?.app;
+
+  if (appAlias !== undefined && specifier.startsWith("#/")) {
+    return path.posix.normalize(
+      path.posix.join("apps", appAlias, "src", specifier.slice(2))
+    );
+  }
+
   if (specifier.startsWith("apps/") || specifier.startsWith("packages/")) {
     return path.posix.normalize(specifier);
   }
