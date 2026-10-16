@@ -1385,6 +1385,8 @@ const auditedContentRegex = defineRule({
   },
 });
 
+const flagModules = new Set(["@savour/core/flags", "@savour/flags"]);
+
 const flagRemovalDate = defineRule({
   create(context) {
     return {
@@ -1401,10 +1403,7 @@ const flagRemovalDate = defineRule({
 
         if (
           !direct &&
-          !(
-            identity?.name === "defineFlag" &&
-            /^@savour\/(?:core\/flags|flags)$/u.test(identity.module)
-          )
+          !(identity?.name === "defineFlag" && flagModules.has(identity.module))
         ) {
           return;
         }
