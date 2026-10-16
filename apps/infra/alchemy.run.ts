@@ -9,6 +9,14 @@ export default Alchemy.Stack(
   Effect.gen(function* stack() {
     const api = yield* Api;
 
-    return { apiUrl: api.url };
+    const web = yield* Cloudflare.Website.Vite("Web", {
+      compatibility: { date: "2026-05-28" },
+      env: { API: api },
+      main: "src/server.ts",
+      rootDir: new URL("../web", import.meta.url).pathname,
+      workersDev: true,
+    });
+
+    return { apiUrl: api.url, webUrl: web.url };
   })
 );
