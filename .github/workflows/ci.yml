@@ -54,6 +54,8 @@ jobs:
         run: corepack enable && corepack prepare pnpm@11.3.0 --activate
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Build the packages the Stack imports
+        run: pnpm turbo run build --filter='@savour/infra^...'
       - name: Plan staging
         id: plan
         run: |
@@ -123,6 +125,8 @@ jobs:
         run: corepack enable && corepack prepare pnpm@11.3.0 --activate
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Build the packages the Stack imports
+        run: pnpm turbo run build --filter='@savour/infra^...'
       - name: Deploy staging
         run: pnpm --filter @savour/infra exec alchemy deploy --stage staging --yes --no-input
       - name: Smoke test staging
