@@ -15,6 +15,11 @@
     "erasableSyntaxOnly": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "paths": {
+      "effect/unstable/sql/SqlError": [
+        "./node_modules/effect/dist/sql/SqlError.d.ts"
+      ]
+    },
     "types": ["node"],
     "noEmit": true,
     "plugins": [
