@@ -27,3 +27,105 @@ jobs:
       - name: Check and test
         # Serialize Turbo tasks so concurrent Vitest pools do not contend on the CI runner.
         run: pnpm turbo run check test build --concurrency=1
+
+  plan-staging:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: plan-staging-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      NO_COLOR: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Node.js 24.18.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+      - name: Enable corepack pnpm
+        run: corepack enable && corepack prepare pnpm@11.3.0 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Plan staging
+        id: plan
+        run: |
+          set +e
+          pnpm --filter @savour/infra exec alchemy plan --stage staging --no-input > plan.txt 2>&1
+          code=$?
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          perl -pi -e 'for my $name (qw(CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN GOOGLE_PLACES_API_KEY NEON_API_KEY)) { my $value = $ENV{$name} // ""; s/\Q$value\E/***/g if length $value }' plan.txt
+          cat plan.txt
+          exit 0
+      - name: Comment the plan on the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          PLAN_EXIT: ${{ steps.plan.outputs.exit }}
+        run: |
+          marker='<!-- staging-plan -->'
+          {
+            echo "$marker"
+            if [ "$PLAN_EXIT" = "0" ]; then
+              echo "### Staging plan"
+            else
+              echo "### Staging plan failed (exit $PLAN_EXIT)"
+            fi
+            echo
+            echo "Applied by the \`deploy-staging\` job when this PR merges to \`main\`."
+            echo
+            echo '```'
+            tail -c 60000 plan.txt
+            echo '```'
+          } > comment.md
+          existing=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate \
+            --jq "[.[] | select(.body | startswith(\"${marker}\"))][0].id // empty")
+          if [ -n "$existing" ]; then
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${existing}" -F body=@comment.md > /dev/null
+          else
+            gh pr comment "$PR" --body-file comment.md
+          fi
+      - name: Fail when the plan failed
+        if: steps.plan.outputs.exit != '0'
+        run: exit 1
+
+  deploy-staging:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: checks
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_API_URL }}
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      NO_COLOR: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Node.js 24.18.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+      - name: Enable corepack pnpm
+        run: corepack enable && corepack prepare pnpm@11.3.0 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Deploy staging
+        run: pnpm --filter @savour/infra exec alchemy deploy --stage staging --yes --no-input
+      - name: Smoke test staging
+        env:
+          STAGING_API_URL: ${{ vars.STAGING_API_URL }}
+        run: scripts/smoke-staging.sh
