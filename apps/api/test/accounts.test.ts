@@ -17,6 +17,7 @@ import { Effect, Layer, Schema } from "effect";
 import { HttpBody, HttpClient, HttpRouter } from "effect/http";
 
 import { apiRoutes } from "../src/app.js";
+import { FakePlaceSearch } from "./fixtures/fake-place-search.js";
 import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
 
 const ana = {
@@ -28,6 +29,7 @@ const ana = {
 const ServedApi = HttpRouter.serve(
   apiRoutes.pipe(
     Layer.provide(MemoryAccounts),
+    Layer.provide(FakePlaceSearch),
     Layer.provide(Layer.succeed(Database, { selectOne: Effect.succeed<1>(1) }))
   ),
   { disableListenLog: true, disableLogger: true }

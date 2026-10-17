@@ -2,6 +2,9 @@ import { NodeHttpServer } from "@effect/platform-node";
 import { describe, expect, it } from "@effect/vitest";
 import {
   Database,
+  PlaceSearchUnavailable,
+  RestaurantSearchResults,
+  addRestaurantAction,
   DatabaseHealthReport,
   DatabaseUnavailable,
   HealthReport,
@@ -13,6 +16,10 @@ import { Effect, Layer, Schema } from "effect";
 import { HttpClient, HttpRouter } from "effect/http";
 
 import { apiRoutes } from "../src/app.js";
+import {
+  FakePlaceSearch,
+  pizzariaBraganca,
+} from "./fixtures/fake-place-search.js";
 import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
 
 const decodeHealth = Schema.decodeUnknownEffect(HealthReport);
@@ -29,7 +36,8 @@ const serveApi = (selectOne: Database["Service"]["selectOne"]) =>
   HttpRouter.serve(
     apiRoutes.pipe(
       Layer.provide(Layer.succeed(Database, { selectOne })),
-      Layer.provide(MemoryAccounts)
+      Layer.provide(MemoryAccounts),
+      Layer.provide(FakePlaceSearch)
     ),
     { disableListenLog: true, disableLogger: true }
   ).pipe(Layer.provideMerge(NodeHttpServer.layerTest), withTestRuntime);
@@ -97,6 +105,49 @@ describe("savour api", () => {
       const response = yield* HttpClient.get("/nope");
 
       expect(response.status).toBe(404);
+    }).pipe(Effect.provide(ServedApi))
+  );
+
+  it.effect("serves restaurant search with the add-a-restaurant link", () =>
+    Effect.gen(function* servesSearch() {
+      const response = yield* HttpClient.get("/restaurants/search", {
+        urlParams: { q: "pizzaria bragança paulista" },
+      });
+
+      expect(response.status).toBe(200);
+      expect(
+        yield* Schema.decodeUnknownEffect(RestaurantSearchResults)(
+          yield* response.json
+        )
+      ).toStrictEqual({
+        next: [addRestaurantAction],
+        results: [pizzariaBraganca],
+      });
+    }).pipe(Effect.provide(ServedApi))
+  );
+
+  it.effect("answers 503 PlaceSearchUnavailable when the provider fails", () =>
+    Effect.gen(function* servesSearchUnavailable() {
+      const response = yield* HttpClient.get("/restaurants/search", {
+        urlParams: { q: "offline" },
+      });
+
+      expect(response.status).toBe(503);
+      expect(
+        yield* Schema.decodeUnknownEffect(PlaceSearchUnavailable)(
+          yield* response.json
+        )
+      ).toStrictEqual(new PlaceSearchUnavailable({ reason: "unreachable" }));
+    }).pipe(Effect.provide(ServedApi))
+  );
+
+  it.effect("refuses an empty search with 400", () =>
+    Effect.gen(function* refusesEmptySearch() {
+      const response = yield* HttpClient.get("/restaurants/search", {
+        urlParams: { q: "   " },
+      });
+
+      expect(response.status).toBe(400);
     }).pipe(Effect.provide(ServedApi))
   );
 });
