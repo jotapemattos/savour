@@ -52,3 +52,12 @@ const placeSearch = googlePlaceSearch(
 ```
 
 Infra tests that compile a Stack supply secrets with `ConfigProvider.layer(ConfigProvider.fromUnknown({ NAME: "test-key" }))`, as in `apps/infra/test/provider-coverage.test.ts`. That file also pins the compile refusal when a secret is missing.
+
+## Staging deploys
+
+`.github/workflows/ci.yml` owns staging. On every pull request from this repo, `plan-staging` runs `alchemy plan --stage staging` and keeps one PR comment updated with the plan. Reviewing the PR includes reviewing that plan. On every push to `main`, `deploy-staging` runs after `checks`, deploys with `alchemy deploy --stage staging --yes --no-input`, then runs `scripts/smoke-staging.sh` against `vars.STAGING_API_URL`.
+
+- Deploys never run in parallel (`concurrency: deploy-staging`). Never deploy staging by hand while a run is in flight.
+- A new capability that staging can reach gets a line in `scripts/smoke-staging.sh`.
+- A new Worker secret gets a repository secret with the same name and a line in both jobs' `env`, beside its `.env.schema` entry (see Worker secrets).
+- The smoke test signs up one synthetic `smoke_<run id>` account per deploy, with an `@example.test` email.
