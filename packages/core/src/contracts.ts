@@ -6,12 +6,19 @@ import {
 } from "./account-contracts.js";
 import { databaseHealthContract } from "./database-health-contracts.js";
 import { healthContract } from "./health-contracts.js";
+import { searchRestaurantsContract } from "./restaurant-search-contracts.js";
 
 export {
   DatabaseHealthReport,
   DatabaseUnavailable,
   databaseHealthContract,
 } from "./database-health-contracts.js";
+
+export { Place, PriceLevel } from "./place-schemas.js";
+
+export { PlaceSearchUnavailable } from "./place-search-unavailable.js";
+
+export { RestaurantSearchResults } from "./restaurant-search-contracts.js";
 
 export {
   HealthReport,
@@ -26,4 +33,5 @@ export const contracts = [
   signInContract,
   signOutContract,
   currentAccountContract,
+  searchRestaurantsContract,
 ] as const;

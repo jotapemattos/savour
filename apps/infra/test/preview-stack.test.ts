@@ -8,7 +8,7 @@ import * as Output from "alchemy/Output";
 import { collection } from "alchemy/Provider";
 import { Stage } from "alchemy/Stage";
 import { inMemoryState } from "alchemy/State";
-import { Effect, Layer, Schema } from "effect";
+import { ConfigProvider, Effect, Layer, Schema } from "effect";
 import * as Arbitrary from "effect/Arbitrary";
 
 import previewDefinition, { previewProgram } from "../alchemy.preview.js";
@@ -39,7 +39,14 @@ const compilePreview = (stage: string) =>
       dev: false,
       dotAlchemy: ".alchemy",
     }),
-    Effect.provide(NodeServices.layer),
+    Effect.provide(
+      Layer.merge(
+        NodeServices.layer,
+        ConfigProvider.layer(
+          ConfigProvider.fromUnknown({ GOOGLE_PLACES_API_KEY: "test-key" })
+        )
+      )
+    ),
     Effect.scoped
   );
 

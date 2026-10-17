@@ -2,13 +2,15 @@ import { CloudflareHyperdrive } from "@alchemy.run/better-auth/CloudflareHyperdr
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as SQL from "alchemy/SQL/Postgres";
+import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
-import { HttpRouter } from "effect/http";
+import { FetchHttpClient, HttpRouter } from "effect/http";
 import * as Layer from "effect/Layer";
 
 import { apiRoutes } from "./app.js";
 import { betterAuthAccounts } from "./better-auth-accounts.js";
 import { DatabaseConnection } from "./database-resources.js";
+import { googlePlaceSearch } from "./google-place-search.js";
 import { PostgresDatabase } from "./postgres-database.js";
 
 const makeApiWorker = Effect.gen(function* makeApiWorker() {
@@ -29,9 +31,15 @@ const makeApiWorker = Effect.gen(function* makeApiWorker() {
     Layer.provide(CloudflareHyperdrive(connection, { migrate: migrationUrl }))
   );
 
+  const placeSearch = googlePlaceSearch(
+    yield* Config.Redacted("GOOGLE_PLACES_API_KEY")
+  ).pipe(Layer.provide(FetchHttpClient.layer));
+
   return {
     fetch: yield* HttpRouter.toHttpEffect(
-      apiRoutes.pipe(Layer.provide(Layer.merge(database, accounts)))
+      apiRoutes.pipe(
+        Layer.provide(Layer.mergeAll(database, accounts, placeSearch))
+      )
     ).pipe(Effect.orDie),
   };
 }).pipe(Effect.provide(Cloudflare.Hyperdrive.ConnectBinding));

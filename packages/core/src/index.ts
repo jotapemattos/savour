@@ -6,6 +6,7 @@ import {
 } from "./account-capabilities.js";
 import { databaseHealth } from "./database-health-capabilities.js";
 import { health } from "./health-capabilities.js";
+import { searchRestaurants } from "./restaurant-search-capabilities.js";
 
 export {
   Account,
@@ -88,4 +89,5 @@ export const capabilities = [
   signIn,
   signOut,
   currentAccount,
+  searchRestaurants,
 ] as const;

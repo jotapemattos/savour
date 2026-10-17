@@ -3,7 +3,15 @@ import { expect, it } from "@effect/vitest";
 import { AuthProviders, Stage } from "alchemy";
 import { AlchemyContextLive } from "alchemy/AlchemyContext";
 import { tryFindProviderRegistrationByType } from "alchemy/Provider";
-import { Effect, Layer, Option, Schema } from "effect";
+import {
+  Cause,
+  ConfigProvider,
+  Effect,
+  Exit,
+  Layer,
+  Option,
+  Schema,
+} from "effect";
 import * as HttpClient from "effect/http/HttpClient";
 
 import stack from "../alchemy.run.js";
@@ -16,7 +24,11 @@ const decodeProjectRetention = Schema.decodeUnknownSync(
   Schema.Struct({ historyRetentionSeconds: Schema.Finite })
 );
 
+const withPlacesKey = (env: Readonly<Record<string, string>>) =>
+  ConfigProvider.layer(ConfigProvider.fromUnknown(env));
+
 const services = Layer.mergeAll(
+  withPlacesKey({ GOOGLE_PLACES_API_KEY: "test-key" }),
   AlchemyContextLive.pipe(Layer.provideMerge(NodeServices.layer)),
   Layer.succeed(Stage, "staging"),
   Layer.succeed(AuthProviders, {}),
@@ -79,5 +91,20 @@ it.effect(
         expect(action.Kind, action.FQN).toBe("action");
         expect(action.Run, action.FQN).toBeTypeOf("function");
       }
+    })
+);
+
+it.effect(
+  "the staging Stack refuses to compile without a Google Places key",
+  () =>
+    Effect.gen(function* refusesWithoutPlacesKey() {
+      const exit = yield* stack.pipe(
+        Effect.provide(Layer.merge(services, withPlacesKey({}))),
+        Effect.exit
+      );
+
+      expect(
+        Exit.isFailure(exit) ? Cause.pretty(exit.cause) : "compiled"
+      ).toContain("GOOGLE_PLACES_API_KEY");
     })
 );
