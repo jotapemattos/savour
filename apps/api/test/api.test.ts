@@ -13,6 +13,7 @@ import { Effect, Layer, Schema } from "effect";
 import { HttpClient, HttpRouter } from "effect/http";
 
 import { apiRoutes } from "../src/app.js";
+import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
 
 const decodeHealth = Schema.decodeUnknownEffect(HealthReport);
 
@@ -26,9 +27,12 @@ const decodeOpenApi = Schema.decodeUnknownEffect(
 
 const serveApi = (selectOne: Database["Service"]["selectOne"]) =>
   HttpRouter.serve(
-    apiRoutes.pipe(Layer.provide(Layer.succeed(Database, { selectOne }))),
+    apiRoutes.pipe(
+      Layer.provide(Layer.succeed(Database, { selectOne })),
+      Layer.provide(MemoryAccounts)
+    ),
     { disableListenLog: true, disableLogger: true }
-  ).pipe(Layer.provideMerge(NodeHttpServer.layerTest));
+  ).pipe(Layer.provideMerge(NodeHttpServer.layerTest), withTestRuntime);
 
 const ServedApi = serveApi(Effect.succeed(1));
 

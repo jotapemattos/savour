@@ -49,6 +49,7 @@ it.effect(
         ["Neon", "Neon.Project"],
         ["Database", "Neon.Branch"],
         ["Hyperdrive", "Cloudflare.Hyperdrive"],
+        ["BetterAuthSecret", "Alchemy.Random"],
       ]);
       expect(
         decodeProjectRetention(compiled.resources.Neon?.Props)

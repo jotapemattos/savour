@@ -2,6 +2,7 @@ export { PreviewStage } from "@savour/api/database-resources";
 
 const previewResourceTypes = new Map([
   ["Api", "Cloudflare.Worker"],
+  ["BetterAuthSecret", "Alchemy.Random"],
   ["Database", "Neon.Branch"],
   ["Hyperdrive", "Cloudflare.Hyperdrive"],
 ]);

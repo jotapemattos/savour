@@ -56,9 +56,11 @@ export const DatabaseConnection = Effect.gen(
   function* declareDatabaseConnection() {
     const branch = yield* DatabaseBranch;
 
-    return yield* Cloudflare.Hyperdrive.Connection("Hyperdrive", {
+    const connection = yield* Cloudflare.Hyperdrive.Connection("Hyperdrive", {
       caching: { disabled: true },
       origin: branch.origin,
     });
+
+    return { connection, migrationUrl: branch.connectionUri };
   }
 );
