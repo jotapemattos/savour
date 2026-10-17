@@ -40,3 +40,15 @@ const withRuntime = <A, E>(
 ```
 
 Never capture it at layer construction to satisfy the startup type. Tests provide a stub with `Layer.succeed(RuntimeContext, ...)`, as in `apps/api/test/fixtures/memory-accounts.ts`.
+
+## Worker secrets
+
+A Worker reads each secret in its startup code with `Config.Redacted("NAME")`. Alchemy binds a `Redacted` value as a `secret_text` at deploy, and a missing value fails the Stack compile. Declare every secret in `.env.schema` with `@sensitive=true`. Adapters receive the `Redacted` value, and only unwrap it with `Redacted.value` at the request that sends it:
+
+```ts
+const placeSearch = googlePlaceSearch(
+  yield * Config.Redacted("GOOGLE_PLACES_API_KEY")
+).pipe(Layer.provide(FetchHttpClient.layer));
+```
+
+Infra tests that compile a Stack supply secrets with `ConfigProvider.layer(ConfigProvider.fromUnknown({ NAME: "test-key" }))`, as in `apps/infra/test/provider-coverage.test.ts`. That file also pins the compile refusal when a secret is missing.
