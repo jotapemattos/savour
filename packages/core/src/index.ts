@@ -38,6 +38,12 @@ export { Accounts, type AccountsService } from "./accounts.js";
 
 export { SessionCredential } from "./session-credential.js";
 
+export { Place, PlaceId, PriceLevel } from "./place-schemas.js";
+
+export { PlaceSearchUnavailable } from "./place-search-unavailable.js";
+
+export { PlaceSearch, type PlaceSearchService } from "./place-search.js";
+
 export {
   DatabaseHealthReport,
   DatabaseUnavailable,
