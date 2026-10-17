@@ -33,7 +33,7 @@ minimumReleaseAgeExclude:
   - "@earendil-works/pi-coding-agent@0.86.1"
   - "@earendil-works/pi-telemetry@0.86.1"
   - "@earendil-works/pi-tui@0.86.1"
-  - better-auth@1.6.2
+  - better-auth@1.7.10
   - satori@0.33.5
   - shiki@3.23.0
   - "@alchemy.run/cloudflare-runtime@2.0.0-beta.83"
