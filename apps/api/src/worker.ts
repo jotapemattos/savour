@@ -1,3 +1,4 @@
+import { CloudflareHyperdrive } from "@alchemy.run/better-auth/CloudflareHyperdrive";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as SQL from "alchemy/SQL/Postgres";
@@ -6,15 +7,15 @@ import { HttpRouter } from "effect/http";
 import * as Layer from "effect/Layer";
 
 import { apiRoutes } from "./app.js";
+import { betterAuthAccounts } from "./better-auth-accounts.js";
 import { DatabaseConnection } from "./database-resources.js";
 import { PostgresDatabase } from "./postgres-database.js";
 
 const makeApiWorker = Effect.gen(function* makeApiWorker() {
   const { stage } = yield* Alchemy.Stack;
 
-  const hyperdrive = yield* Cloudflare.Hyperdrive.Connect(
-    yield* DatabaseConnection
-  );
+  const { connection, migrationUrl } = yield* DatabaseConnection;
+  const hyperdrive = yield* Cloudflare.Hyperdrive.Connect(connection);
 
   yield* Effect.logInfo("savour-api booted").pipe(
     Effect.annotateLogs({ stage })
@@ -24,9 +25,13 @@ const makeApiWorker = Effect.gen(function* makeApiWorker() {
     Layer.provide(SQL.PostgresLayer({ url: hyperdrive.connectionString }))
   );
 
+  const accounts = betterAuthAccounts().pipe(
+    Layer.provide(CloudflareHyperdrive(connection, { migrate: migrationUrl }))
+  );
+
   return {
     fetch: yield* HttpRouter.toHttpEffect(
-      apiRoutes.pipe(Layer.provide(database))
+      apiRoutes.pipe(Layer.provide(Layer.merge(database, accounts)))
     ).pipe(Effect.orDie),
   };
 }).pipe(Effect.provide(Cloudflare.Hyperdrive.ConnectBinding));

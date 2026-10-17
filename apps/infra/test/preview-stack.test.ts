@@ -76,7 +76,7 @@ const propSource = (value: Output.Output) =>
     : undefined;
 
 it.effect.prop(
-  "preview declares the Api Worker, its own Neon branch and a Hyperdrive config on it",
+  "preview declares the Api Worker, its own Neon branch, a Hyperdrive config on it and its own auth secret",
   { stage: Arbitrary.schema(PreviewStage) },
   ({ stage }) =>
     compilePreview(stage).pipe(
@@ -89,8 +89,9 @@ it.effect.prop(
           );
 
           expect(previewResourcesAllowed(stack.resources)).toBe(true);
-          expect(Object.keys(stack.resources)).toStrictEqual([
+          expect(Object.keys(stack.resources).toSorted()).toStrictEqual([
             "Api",
+            "BetterAuthSecret",
             "Database",
             "Hyperdrive",
           ]);
