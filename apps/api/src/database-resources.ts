@@ -1,4 +1,4 @@
-import { Stage } from "alchemy";
+import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Neon from "alchemy/Neon";
 import { Effect, Schema } from "effect";
@@ -45,7 +45,7 @@ const previewBranch = (stage: string) =>
   });
 
 export const DatabaseBranch = Effect.gen(function* declareDatabaseBranch() {
-  const stage = yield* Stage;
+  const { stage } = yield* Alchemy.Stack;
 
   return yield* isPreviewStage(stage)
     ? previewBranch(stage)

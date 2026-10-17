@@ -10,7 +10,7 @@ import {
 } from "../src/index.js";
 
 const decodeLatency = Schema.decodeUnknownSync(
-  Schema.Struct({ latencyMs: Schema.Number })
+  Schema.Struct({ latencyMs: Schema.Finite })
 );
 
 type StructuredLog = ReturnType<typeof Logger.formatStructured.log>;

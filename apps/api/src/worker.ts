@@ -1,4 +1,4 @@
-import { Stage } from "alchemy";
+import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as SQL from "alchemy/SQL/Postgres";
 import * as Effect from "effect/Effect";
@@ -10,7 +10,7 @@ import { DatabaseConnection } from "./database-resources.js";
 import { PostgresDatabase } from "./postgres-database.js";
 
 const makeApiWorker = Effect.gen(function* makeApiWorker() {
-  const stage = yield* Stage;
+  const { stage } = yield* Alchemy.Stack;
 
   const hyperdrive = yield* Cloudflare.Hyperdrive.Connect(
     yield* DatabaseConnection
