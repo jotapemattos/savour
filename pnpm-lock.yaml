@@ -289,6 +289,9 @@ importers:
       '@electric-sql/pglite':
         specifier: 0.3.15
         version: 0.3.15
+      '@electric-sql/pglite-socket':
+        specifier: 0.0.20
+        version: 0.0.20(@electric-sql/pglite@0.3.15)
       '@types/node':
         specifier: 24.13.6
         version: 24.13.6
