@@ -13,7 +13,7 @@ const decodeBranchName = Schema.decodeUnknownSync(
 );
 
 const decodeProjectRetention = Schema.decodeUnknownSync(
-  Schema.Struct({ historyRetentionSeconds: Schema.Number })
+  Schema.Struct({ historyRetentionSeconds: Schema.Finite })
 );
 
 const services = Layer.mergeAll(
