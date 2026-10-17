@@ -12,6 +12,10 @@ const decodeBranchName = Schema.decodeUnknownSync(
   Schema.Struct({ name: Schema.String })
 );
 
+const decodeProjectRetention = Schema.decodeUnknownSync(
+  Schema.Struct({ historyRetentionSeconds: Schema.Number })
+);
+
 const services = Layer.mergeAll(
   AlchemyContextLive.pipe(Layer.provideMerge(NodeServices.layer)),
   Layer.succeed(Stage, "staging"),
@@ -46,6 +50,10 @@ it.effect(
         ["Database", "Neon.Branch"],
         ["Hyperdrive", "Cloudflare.Hyperdrive"],
       ]);
+      expect(
+        decodeProjectRetention(compiled.resources.Neon?.Props)
+          .historyRetentionSeconds
+      ).toBe(21_600);
       expect(decodeBranchName(compiled.resources.Database?.Props).name).toBe(
         "staging"
       );
