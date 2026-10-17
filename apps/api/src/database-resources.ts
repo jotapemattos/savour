@@ -5,6 +5,8 @@ import { Effect, Schema } from "effect";
 
 export const DATABASE_OWNER_STAGE = "staging";
 
+export const FREE_TIER_HISTORY_RETENTION_SECONDS = 21_600;
+
 export const PreviewStage = Schema.String.check(
   Schema.isPattern(/^pr-[1-9][0-9]*$/u)
 );
@@ -16,7 +18,9 @@ const migrationsDirectory = () =>
 
 const ownedBranch = (stage: string) =>
   Effect.gen(function* declareOwnedBranch() {
-    const project = yield* Neon.Project("Neon", {});
+    const project = yield* Neon.Project("Neon", {
+      historyRetentionSeconds: FREE_TIER_HISTORY_RETENTION_SECONDS,
+    });
 
     return yield* Neon.Branch("Database", {
       migrations: migrationsDirectory(),
