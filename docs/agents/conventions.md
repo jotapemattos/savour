@@ -20,3 +20,23 @@ Inside Effect code, avoid Promises instead of escaping: stub `HttpClient` rather
 ```ts
 process.env.ALCHEMY_CLOUDFLARE_VITE_INJECTED === "1" ? null : cloudflare({ ... })
 ```
+
+## Alchemy RuntimeContext in adapters
+
+Alchemy's Worker bridge provides `RuntimeContext` per event, next to the request `Scope`, not to the Worker's startup effect, whose type rejects it. Startup also runs at deploy, while Alchemy builds the stack. An adapter wrapping an API that requires `RuntimeContext` (such as `@alchemy.run/better-auth`) reads it on each call and keeps it out of the port's types:
+
+```ts
+const withRuntime = <A, E>(
+  effect: Effect.Effect<A, E, RuntimeContext>
+): Effect.Effect<A, E> =>
+  Effect.flatMap(
+    Effect.serviceOption(RuntimeContext),
+    Option.match({
+      onNone: () => Effect.die(new MissingRuntimeContext({ adapter })),
+      onSome: (runtime) =>
+        Effect.provideService(effect, RuntimeContext, runtime),
+    })
+  );
+```
+
+Never capture it at layer construction to satisfy the startup type. Tests provide a stub with `Layer.succeed(RuntimeContext, ...)`, as in `apps/api/test/fixtures/memory-accounts.ts`.
