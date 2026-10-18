@@ -10,6 +10,7 @@
   --primary-foreground: oklch(0.99 0.004 75);
   --success: oklch(0.62 0.15 150);
   --warning: oklch(0.72 0.15 75);
+  --destructive: oklch(0.55 0.2 27);
   --radius: 0.75rem;
 }
 
@@ -22,6 +23,7 @@
     --border: oklch(0.28 0.008 60);
     --primary: oklch(0.7 0.14 40);
     --primary-foreground: oklch(0.17 0.006 60);
+    --destructive: oklch(0.72 0.17 25);
   }
 }
 
@@ -35,6 +37,7 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-destructive: var(--destructive);
   --radius-lg: var(--radius);
 }
 
