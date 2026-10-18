@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
+import type { SessionGateway } from "#/client/account-session";
 import { apiStatusQuery } from "#/client/savour-api";
 import type { ApiTransport } from "#/client/savour-api";
 import { SavourShell } from "#/features/shell/savour-shell";
@@ -17,6 +18,7 @@ import appCss from "#/styles.css?url";
 export interface RouterContext {
   readonly api: ApiTransport;
   readonly queryClient: QueryClient;
+  readonly session: SessionGateway;
 }
 
 const RootDocument = (props: { readonly children: ReactNode }) => (

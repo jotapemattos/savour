@@ -1,46 +1,13 @@
 import { afterEach, describe, expect, it } from "@effect/vitest";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen } from "@testing-library/react";
-import { Effect, Layer, Schedule } from "effect";
-import { HttpClient, HttpClientResponse } from "effect/http";
+import { Effect, Schedule } from "effect";
 
-import type { ApiTransport } from "../src/client/savour-api";
 import { SavourShell } from "../src/features/shell/savour-shell";
 import { createSavourRouter } from "../src/savour-router";
+import { memorySession, scriptedApi } from "./fixtures/scripted-api";
 
 afterEach(cleanup);
-
-const healthBody = JSON.stringify({
-  next: [
-    {
-      description: "Read the OpenAPI document for every Savour capability.",
-      href: "/openapi.json",
-      rel: "describedby",
-    },
-  ],
-  service: "savour-api",
-  status: "ok",
-});
-
-const recordingTransport = (requests: string[]): ApiTransport => ({
-  baseUrl: "http://localhost:3000/api",
-  layer: Layer.succeed(
-    HttpClient.HttpClient,
-    HttpClient.make((request, url) =>
-      Effect.sync(() => {
-        requests.push(`${request.method} ${url.pathname}`);
-
-        return HttpClientResponse.fromWeb(
-          request,
-          new Response(healthBody, {
-            headers: { "content-type": "application/json" },
-            status: 200,
-          })
-        );
-      })
-    )
-  ),
-});
 
 const appearedStatus = Effect.try(() => screen.getByRole("status")).pipe(
   Effect.retry({ schedule: Schedule.spaced("10 millis"), times: 200 })
@@ -64,7 +31,8 @@ describe("web shell", () => {
   it.live("loads data only through the typed HTTP client", () =>
     Effect.gen(function* rendersHealthFromClient() {
       const requests: string[] = [];
-      const router = createSavourRouter(recordingTransport(requests));
+      const api = scriptedApi({}, requests);
+      const router = createSavourRouter(api, memorySession(api));
 
       render(<RouterProvider router={router} />);
       const status = yield* appearedStatus;
