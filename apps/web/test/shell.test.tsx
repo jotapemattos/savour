@@ -38,7 +38,7 @@ describe("web shell", () => {
       const status = yield* appearedStatus;
 
       expect(status.textContent).toBe("ok");
-      expect(requests).toStrictEqual(["GET /api/health"]);
+      expect(requests).toStrictEqual(["GET /api/health", "GET /api/account"]);
     })
   );
 });
