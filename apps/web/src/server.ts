@@ -2,6 +2,7 @@ import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
 import { Effect } from "effect";
 
 import { apiFetch } from "./server/api-binding";
+import { withSessionBearer } from "./server/session-cookie";
 
 const API_PREFIX = "/api";
 
@@ -12,7 +13,10 @@ const toApiRequest = (request: Request, url: URL) => {
   const target = new URL(url);
   target.pathname = url.pathname.slice(API_PREFIX.length) || "/";
 
-  return new Request(target, request);
+  return withSessionBearer(
+    new Request(target, request),
+    request.headers.get("cookie")
+  );
 };
 
 const renderFailed = (route: string, status: number) =>

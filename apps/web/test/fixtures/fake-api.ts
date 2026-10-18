@@ -14,7 +14,9 @@ const echo = async (request: Request) => {
   const url = new URL(request.url);
 
   return Response.json({
+    authorization: request.headers.get("authorization"),
     body,
+    cookie: request.headers.get("cookie"),
     method: request.method,
     path: url.pathname,
     search: url.search,
