@@ -14,7 +14,7 @@ export type ApiStatus = "ok" | "unavailable";
 
 const HEALTH_READ_LIMIT = Duration.seconds(2);
 
-const savourApi = (transport: ApiTransport) =>
+export const savourApi = (transport: ApiTransport) =>
   makeHttpApiClient("Savour", contracts, transport.baseUrl);
 
 const readApiStatus = (transport: ApiTransport) =>

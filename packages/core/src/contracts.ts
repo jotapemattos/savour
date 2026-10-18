@@ -8,6 +8,10 @@ import { databaseHealthContract } from "./database-health-contracts.js";
 import { healthContract } from "./health-contracts.js";
 import { searchRestaurantsContract } from "./restaurant-search-contracts.js";
 
+export { SignInInput, SignUpInput } from "./account-contracts.js";
+
+export { Account } from "./account-schemas.js";
+
 export {
   DatabaseHealthReport,
   DatabaseUnavailable,

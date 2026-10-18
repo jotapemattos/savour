@@ -4,6 +4,7 @@ export const SESSION_COOKIE = "savour_session";
 
 export const SESSION_COOKIE_OPTIONS = {
   httpOnly: true,
+  maxAge: 604_800,
   path: "/",
   sameSite: "lax",
   secure: true,
