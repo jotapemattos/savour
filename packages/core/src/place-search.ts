@@ -1,7 +1,7 @@
 import { Context } from "effect";
-import type { Effect } from "effect";
+import type { Effect, Option } from "effect";
 
-import type { Place } from "./place-schemas.js";
+import type { LatLng, Place } from "./place-schemas.js";
 import type { PlaceSearchUnavailable } from "./place-search-unavailable.js";
 
 export interface PlaceSearchService {
@@ -9,7 +9,8 @@ export interface PlaceSearchService {
     placeId: string
   ) => Effect.Effect<typeof Place.Type, PlaceSearchUnavailable>;
   readonly search: (
-    query: string
+    query: string,
+    near: Option.Option<typeof LatLng.Type>
   ) => Effect.Effect<readonly (typeof Place.Type)[], PlaceSearchUnavailable>;
 }
 
