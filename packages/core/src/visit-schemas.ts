@@ -1,6 +1,7 @@
 import { DateTime, Option, Order, Schema } from "effect";
 
 import { NextAction } from "./health-contracts.js";
+import { Place } from "./place-schemas.js";
 import { Restaurant } from "./restaurants.js";
 
 const isCalendarDay = (text: string) =>
@@ -38,14 +39,19 @@ export const Visit = Schema.Struct({
   tags: Schema.Array(Schema.String),
 });
 
+export const DiaryEntry = Schema.Struct({
+  ...Visit.fields,
+  place: Schema.NullOr(Place),
+});
+
 export const LoggedVisit = Schema.Struct({
   next: Schema.Array(NextAction),
-  visit: Visit,
+  visit: DiaryEntry,
 });
 
 export const Diary = Schema.Struct({
   next: Schema.Array(NextAction),
-  visits: Schema.Array(Visit),
+  visits: Schema.Array(DiaryEntry),
 });
 
 export interface StoredVisit {
