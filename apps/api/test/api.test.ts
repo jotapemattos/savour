@@ -21,6 +21,7 @@ import {
   pizzariaBraganca,
 } from "./fixtures/fake-place-search.js";
 import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
+import { memoryVisits } from "./fixtures/memory-visits.js";
 
 const decodeHealth = Schema.decodeUnknownEffect(HealthReport);
 
@@ -37,7 +38,8 @@ const serveApi = (selectOne: Database["Service"]["selectOne"]) =>
     apiRoutes.pipe(
       Layer.provide(Layer.succeed(Database, { selectOne })),
       Layer.provide(MemoryAccounts),
-      Layer.provide(FakePlaceSearch)
+      Layer.provide(FakePlaceSearch),
+      Layer.provide(memoryVisits().layer)
     ),
     { disableListenLog: true, disableLogger: true }
   ).pipe(Layer.provideMerge(NodeHttpServer.layerTest), withTestRuntime);

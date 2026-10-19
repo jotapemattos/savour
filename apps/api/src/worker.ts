@@ -12,6 +12,8 @@ import { betterAuthAccounts } from "./better-auth-accounts.js";
 import { DatabaseConnection } from "./database-resources.js";
 import { googlePlaceSearch } from "./google-place-search.js";
 import { PostgresDatabase } from "./postgres-database.js";
+import { PostgresRestaurants } from "./postgres-restaurants.js";
+import { PostgresVisits } from "./postgres-visits.js";
 
 const makeApiWorker = Effect.gen(function* makeApiWorker() {
   const { stage } = yield* Alchemy.Stack;
@@ -23,7 +25,11 @@ const makeApiWorker = Effect.gen(function* makeApiWorker() {
     Effect.annotateLogs({ stage })
   );
 
-  const database = PostgresDatabase.pipe(
+  const database = Layer.mergeAll(
+    PostgresDatabase,
+    PostgresRestaurants,
+    PostgresVisits
+  ).pipe(
     Layer.provide(SQL.PostgresLayer({ url: hyperdrive.connectionString }))
   );
 

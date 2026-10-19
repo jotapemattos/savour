@@ -19,6 +19,7 @@ import { HttpBody, HttpClient, HttpRouter } from "effect/http";
 import { apiRoutes } from "../src/app.js";
 import { FakePlaceSearch } from "./fixtures/fake-place-search.js";
 import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
+import { memoryVisits } from "./fixtures/memory-visits.js";
 import { uniqueMemoryAccounts } from "./fixtures/unique-memory-accounts.js";
 
 const ana = {
@@ -32,6 +33,7 @@ const serveWith = (accounts: typeof MemoryAccounts) =>
     apiRoutes.pipe(
       Layer.provide(accounts),
       Layer.provide(FakePlaceSearch),
+      Layer.provide(memoryVisits().layer),
       Layer.provide(
         Layer.succeed(Database, { selectOne: Effect.succeed<1>(1) })
       )

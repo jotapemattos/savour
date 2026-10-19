@@ -46,6 +46,21 @@ echo "ok   sign up"
 
 expect_status "current account" 200 \
   "$(status "${api}/account" --header "authorization: Bearer ${token}")"
+place_id="$(curl --silent --get --max-time 20 "${api}/restaurants/search" \
+  --data-urlencode "q=pizzaria bragança paulista" |
+  grep -o '"placeId":"[^"]*"' | head -n 1 | cut -d '"' -f 4)"
+
+if [[ -z "$place_id" ]]; then
+  echo "FAIL restaurant search: no place to log a visit to" >&2
+  exit 1
+fi
+
+expect_status "log a visit" 200 \
+  "$(status --request POST "${api}/visits" --header "authorization: Bearer ${token}" \
+    --header 'content-type: application/json' \
+    --data "$(printf '{"placeId":"%s","date":"%s","rating":4}' "$place_id" "$(date -u +%F)")")"
+expect_status "diary" 200 \
+  "$(status "${api}/diary" --header "authorization: Bearer ${token}")"
 expect_status "duplicate handle" 409 \
   "$(post_json /accounts "$(json "other+${run}@example.test" "$handle" "$password")")"
 expect_status "wrong password" 401 \
