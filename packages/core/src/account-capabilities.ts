@@ -39,7 +39,7 @@ export const signedOutNextActions = [
   },
 ] as const;
 
-const requireSessionToken = SessionCredential.pipe(
+export const requireSessionToken = SessionCredential.pipe(
   Effect.flatMap(Effect.fromOption),
   Effect.mapError(() => new Unauthenticated())
 );
@@ -84,7 +84,7 @@ export const currentAccount = implement(currentAccountContract, () =>
   Effect.gen(function* readCurrentAccount() {
     const accounts = yield* Accounts;
     const token = yield* requireSessionToken;
-    const account = yield* accounts.accountForSession(token);
+    const { account } = yield* accounts.accountForSession(token);
 
     return { account, next: signedInNextActions };
   })

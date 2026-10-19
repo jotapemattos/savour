@@ -31,7 +31,8 @@ const ana = {
 };
 
 const FakeAccounts = Layer.succeed(Accounts, {
-  accountForSession: () => Effect.succeed(ana.account),
+  accountForSession: () =>
+    Effect.succeed({ account: ana.account, accountId: "account-ana" }),
   signIn: () => Effect.fail(new InvalidCredentials()),
   signOut: () => Effect.void,
   signUp: () => Effect.succeed(ana),
