@@ -1,3 +1,4 @@
+import type { Place } from "@savour/core/contracts";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { Match, Predicate } from "effect";
 import { AnimatePresence, motion } from "motion/react";
@@ -61,7 +62,11 @@ const announcement = (search: UseQueryResult<Outcome>) => {
   return "";
 };
 
-const settled = (search: UseQueryResult<Outcome>, q: string) => {
+const settled = (
+  search: UseQueryResult<Outcome>,
+  q: string,
+  onLog: (place: typeof Place.Type) => void
+) => {
   if (search.isError) {
     return (
       <SearchUnavailableNotice
@@ -88,7 +93,7 @@ const settled = (search: UseQueryResult<Outcome>, q: string) => {
       found.places.length === 0 ? (
         <NoMatches canAddByHand={found.canAddByHand} q={q} />
       ) : (
-        <PlaceList places={found.places} />
+        <PlaceList onLog={onLog} places={found.places} />
       )
     ),
     Match.exhaustive
@@ -96,6 +101,7 @@ const settled = (search: UseQueryResult<Outcome>, q: string) => {
 };
 
 export const SearchOutcome = (props: {
+  readonly onLog: (place: typeof Place.Type) => void;
   readonly q: string | undefined;
   readonly search: UseQueryResult<Outcome>;
 }) => (
@@ -106,7 +112,7 @@ export const SearchOutcome = (props: {
     <AnimatePresence initial={false} mode="wait">
       {props.q === undefined || props.search.isFetching ? null : (
         <motion.div exit={{ opacity: 0, transition: EXIT }} key={props.q}>
-          {settled(props.search, props.q)}
+          {settled(props.search, props.q, props.onLog)}
         </motion.div>
       )}
     </AnimatePresence>
