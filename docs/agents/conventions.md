@@ -57,6 +57,7 @@ Infra tests that compile a Stack supply secrets with `ConfigProvider.layer(Confi
 
 `.github/workflows/ci.yml` owns staging. On every pull request from this repo, `plan-staging` runs `alchemy plan --stage staging` and keeps one PR comment updated with the plan. Reviewing the PR includes reviewing that plan. On every push to `main`, `deploy-staging` runs after `checks`, deploys with `alchemy deploy --stage staging --yes --no-input`, then runs `scripts/smoke-staging.sh` against `vars.STAGING_API_URL`.
 
+- CI skips pull requests and pushes that only change Markdown, outside `AGENTS.md` and `README.md` (which `packages/core/test/docs-pins.test.ts` reads). A doc-only merge doesn't deploy, and the pre-commit hook is the only format check for those files. A new file that tests or the build read must not be Markdown under `docs/`, or the `paths` filter in `ci.yml` needs it added.
 - Deploys never run in parallel (`concurrency: deploy-staging`). Never deploy staging by hand while a run is in flight.
 - A new capability that staging can reach gets a line in `scripts/smoke-staging.sh`.
 - A new Worker secret gets a repository secret with the same name and a line in both jobs' `env`, beside its `.env.schema` entry (see Worker secrets).
