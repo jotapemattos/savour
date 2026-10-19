@@ -5,9 +5,12 @@ import { requireSessionToken } from "./account-capabilities.js";
 import { Accounts } from "./accounts.js";
 import { InvalidRating } from "./invalid-rating.js";
 import { InvalidVisitDate } from "./invalid-visit-date.js";
+import type { Place } from "./place-schemas.js";
+import { PlaceSearch } from "./place-search.js";
 import { Restaurants } from "./restaurants.js";
 import { diaryContract, logVisitContract } from "./visit-contracts.js";
 import { Rating, VisitDate, diaryOrder } from "./visit-schemas.js";
+import type { Visit } from "./visit-schemas.js";
 import { Visits } from "./visits.js";
 
 export const readDiaryAction = {
@@ -53,6 +56,40 @@ const ratingOf = (rating: number | undefined) =>
         Effect.mapError(() => new InvalidRating({ rating }))
       );
 
+const PLACE_LOOKUPS = 4;
+
+const placeOf = (
+  placeId: string
+): Effect.Effect<typeof Place.Type | null, never, PlaceSearch> =>
+  PlaceSearch.use((placeSearch) => placeSearch.details(placeId)).pipe(
+    Effect.catchTag("PlaceSearchUnavailable", () =>
+      Effect.logWarning("diary.place_unresolved").pipe(
+        Effect.annotateLogs({ placeId }),
+        Effect.as(null)
+      )
+    )
+  );
+
+const withPlaces = (visits: readonly (typeof Visit.Type)[]) =>
+  Effect.gen(function* resolvePlaces() {
+    const placeIds = [
+      ...new Set(visits.map(({ restaurant }) => restaurant.placeId)),
+    ];
+
+    const places = yield* Effect.forEach(placeIds, placeOf, {
+      concurrency: PLACE_LOOKUPS,
+    });
+
+    const byPlaceId = new Map(
+      placeIds.map((placeId, index) => [placeId, places[index] ?? null])
+    );
+
+    return visits.map((visit) => ({
+      ...visit,
+      place: byPlaceId.get(visit.restaurant.placeId) ?? null,
+    }));
+  });
+
 export const logVisit = implement(logVisitContract, (input) =>
   Effect.gen(function* logVisitToDiary() {
     const accountId = yield* signedInAccountId;
@@ -82,7 +119,9 @@ export const logVisit = implement(logVisitContract, (input) =>
       })
     );
 
-    return { next: [readDiaryAction], visit };
+    const place = yield* placeOf(visit.restaurant.placeId);
+
+    return { next: [readDiaryAction], visit: { ...visit, place } };
   })
 );
 
@@ -92,9 +131,13 @@ export const diary = implement(diaryContract, () =>
     const visits = yield* Visits;
     const stored = yield* visits.diary(accountId);
 
+    const visitsNewestFirst = stored
+      .toSorted(diaryOrder)
+      .map(({ visit }) => visit);
+
     return {
       next: [logVisitAction],
-      visits: stored.toSorted(diaryOrder).map(({ visit }) => visit),
+      visits: yield* withPlaces(visitsNewestFirst),
     };
   })
 );

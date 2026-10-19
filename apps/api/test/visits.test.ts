@@ -3,6 +3,8 @@ import { describe, expect, it } from "@effect/vitest";
 import {
   Database,
   Diary,
+  PlaceSearch,
+  PlaceSearchUnavailable,
   InvalidRating,
   InvalidVisitDate,
   LoggedVisit,
@@ -19,7 +21,10 @@ import type { HttpClientResponse } from "effect/http";
 import { TestClock } from "effect/testing";
 
 import { apiRoutes } from "../src/app.js";
-import { FakePlaceSearch } from "./fixtures/fake-place-search.js";
+import {
+  FakePlaceSearch,
+  pizzariaBraganca,
+} from "./fixtures/fake-place-search.js";
 import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
 import { memoryVisits } from "./fixtures/memory-visits.js";
 
@@ -31,11 +36,36 @@ const restaurantR = {
   source: "provider",
 } as const;
 
-const serveWith = (visits: ReturnType<typeof memoryVisits>) =>
+const countingPlaces = () => {
+  const asked: string[] = [];
+
+  const layer = Layer.succeed(PlaceSearch, {
+    details: (placeId) =>
+      Effect.suspend(() => {
+        asked.push(placeId);
+
+        return placeId === "ChIJbroken"
+          ? Effect.fail(new PlaceSearchUnavailable({ reason: "refused" }))
+          : Effect.succeed({
+              ...pizzariaBraganca,
+              name: `Place ${placeId}`,
+              placeId,
+            });
+      }),
+    search: () => Effect.succeed([]),
+  });
+
+  return { asked, layer };
+};
+
+const serveWith = (
+  visits: ReturnType<typeof memoryVisits>,
+  places: Layer.Layer<PlaceSearch> = FakePlaceSearch
+) =>
   HttpRouter.serve(
     apiRoutes.pipe(
       Layer.provide(MemoryAccounts),
-      Layer.provide(FakePlaceSearch),
+      Layer.provide(places),
       Layer.provide(visits.layer),
       Layer.provide(
         Layer.succeed(Database, { selectOne: Effect.succeed<1>(1) })
@@ -64,7 +94,8 @@ const signUpAna = Effect.gen(function* signUpAna() {
 
 const logAs = (
   token: string,
-  body: Omit<typeof LogVisitInput.Encoded, "placeId">
+  body: Omit<typeof LogVisitInput.Encoded, "placeId"> &
+    Partial<Pick<typeof LogVisitInput.Encoded, "placeId">>
 ) =>
   HttpClient.post("/visits", {
     body: HttpBody.jsonUnsafe({ placeId: "ChIJbraganca", ...body }),
@@ -157,6 +188,7 @@ describe("visit logging", () => {
           dishes: [],
           id: "visit-1",
           lovedIt: false,
+          place: pizzariaBraganca,
           rating: null,
           restaurant: restaurantR,
           review: null,
@@ -250,4 +282,81 @@ describe("visit logging", () => {
       expect(visits.stored).toStrictEqual([]);
     }).pipe(onToday, Effect.provide(serveWith(visits)));
   });
+});
+
+describe("diary with places", () => {
+  it.effect("names the restaurant of each visit", () =>
+    Effect.gen(function* namesRestaurants() {
+      const token = yield* signUpAna;
+
+      yield* logAs(token, { date: "2026-10-10" });
+
+      const diary = yield* diaryOf(token);
+
+      expect(diary.visits[0]?.place?.name).toBe("Pizzaria Bella Bragança");
+    }).pipe(onToday, Effect.provide(serveWith(memoryVisits())))
+  );
+
+  it.effect("asks Google once per distinct place", () => {
+    const places = countingPlaces();
+
+    return Effect.gen(function* asksOncePerPlace() {
+      const token = yield* signUpAna;
+
+      yield* logAs(token, { date: "2026-10-01" });
+      yield* logAs(token, { date: "2026-10-05" });
+      yield* logAs(token, { date: "2026-10-09", placeId: "ChIJcampinas" });
+      places.asked.splice(0);
+
+      const diary = yield* diaryOf(token);
+
+      expect(places.asked.toSorted()).toStrictEqual([
+        "ChIJbraganca",
+        "ChIJcampinas",
+      ]);
+      expect(diary.visits.map(({ place }) => place?.name)).toStrictEqual([
+        "Place ChIJcampinas",
+        "Place ChIJbraganca",
+        "Place ChIJbraganca",
+      ]);
+    }).pipe(onToday, Effect.provide(serveWith(memoryVisits(), places.layer)));
+  });
+
+  it.effect("still answers when Google fails for a place", () => {
+    const places = countingPlaces();
+
+    return Effect.gen(function* answersWithoutPlace() {
+      const token = yield* signUpAna;
+
+      yield* logAs(token, { date: "2026-10-01", placeId: "ChIJbroken" });
+      yield* logAs(token, { date: "2026-10-05" });
+
+      const response = yield* HttpClient.get("/diary", {
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.status).toBe(200);
+
+      const diary = yield* Schema.decodeUnknownEffect(Diary)(
+        yield* response.json
+      );
+
+      expect(
+        diary.visits.map(({ place }) => place?.name ?? null)
+      ).toStrictEqual(["Place ChIJbraganca", null]);
+    }).pipe(onToday, Effect.provide(serveWith(memoryVisits(), places.layer)));
+  });
+
+  it.effect("names the restaurant in the logVisit answer", () =>
+    Effect.gen(function* namesLoggedVisit() {
+      const token = yield* signUpAna;
+      const response = yield* logAs(token, { date: "2026-10-10" });
+
+      const logged = yield* Schema.decodeUnknownEffect(LoggedVisit)(
+        yield* response.json
+      );
+
+      expect(logged.visit.place?.name).toBe("Pizzaria Bella Bragança");
+    }).pipe(onToday, Effect.provide(serveWith(memoryVisits())))
+  );
 });
