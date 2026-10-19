@@ -12,13 +12,15 @@ import {
   databaseHealthNextActions,
   healthNextActions,
 } from "@savour/core";
-import { Effect, Layer, Schema } from "effect";
+import type { PlaceSearch } from "@savour/core";
+import { Effect, Layer, Option, Schema } from "effect";
 import { HttpClient, HttpRouter } from "effect/http";
 
 import { apiRoutes } from "../src/app.js";
 import {
   FakePlaceSearch,
   pizzariaBraganca,
+  recordingPlaceSearch,
 } from "./fixtures/fake-place-search.js";
 import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
 import { memoryVisits } from "./fixtures/memory-visits.js";
@@ -33,12 +35,15 @@ const decodeOpenApi = Schema.decodeUnknownEffect(
   Schema.Struct({ paths: Schema.Record(Schema.String, Schema.Unknown) })
 );
 
-const serveApi = (selectOne: Database["Service"]["selectOne"]) =>
+const serveApi = (
+  selectOne: Database["Service"]["selectOne"],
+  places: Layer.Layer<PlaceSearch> = FakePlaceSearch
+) =>
   HttpRouter.serve(
     apiRoutes.pipe(
       Layer.provide(Layer.succeed(Database, { selectOne })),
       Layer.provide(MemoryAccounts),
-      Layer.provide(FakePlaceSearch),
+      Layer.provide(places),
       Layer.provide(memoryVisits().layer)
     ),
     { disableListenLog: true, disableLogger: true }
@@ -152,4 +157,38 @@ describe("savour api", () => {
       expect(response.status).toBe(400);
     }).pipe(Effect.provide(ServedApi))
   );
+
+  it.effect("biases search toward the near location", () => {
+    const places = recordingPlaceSearch();
+
+    return Effect.gen(function* servesNearSearch() {
+      const response = yield* HttpClient.get("/restaurants/search", {
+        urlParams: { near: "-22.95,-46.54", q: "pizzaria" },
+      });
+
+      expect(response.status).toBe(200);
+      expect(places.nears).toStrictEqual([
+        Option.some({ latitude: -22.95, longitude: -46.54 }),
+      ]);
+    }).pipe(Effect.provide(serveApi(Effect.succeed(1), places.layer)));
+  });
+
+  it.effect("refuses a location outside the globe with 400", () => {
+    const places = recordingPlaceSearch();
+
+    return Effect.gen(function* refusesBadNear() {
+      const statuses: number[] = [];
+
+      for (const near of ["-91,10", "abc"]) {
+        const response = yield* HttpClient.get("/restaurants/search", {
+          urlParams: { near, q: "pizzaria" },
+        });
+
+        statuses.push(response.status);
+      }
+
+      expect(statuses).toStrictEqual([400, 400]);
+      expect(places.nears).toStrictEqual([]);
+    }).pipe(Effect.provide(serveApi(Effect.succeed(1), places.layer)));
+  });
 });
