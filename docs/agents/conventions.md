@@ -61,3 +61,7 @@ Infra tests that compile a Stack supply secrets with `ConfigProvider.layer(Confi
 - A new capability that staging can reach gets a line in `scripts/smoke-staging.sh`.
 - A new Worker secret gets a repository secret with the same name and a line in both jobs' `env`, beside its `.env.schema` entry (see Worker secrets).
 - The smoke test signs up one synthetic `smoke_<run id>` account per deploy, with an `@example.test` email.
+
+## Splitting a pushed card
+
+When a parked card is split after its branch was pushed, the first half ships from its own card and branch. Once it merges, the remaining half goes up on a new branch (`<card id>-<slice>`, such as `issue-22-screens`), rebased onto `main`, because rewriting the pushed branch would need a force-push. The old remote branch is left for the human to delete.
