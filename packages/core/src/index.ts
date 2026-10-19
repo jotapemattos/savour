@@ -75,6 +75,23 @@ export {
 export { Database, type DatabaseService } from "./database.js";
 
 export {
+  Diary,
+  LoggedVisit,
+  Rating,
+  Visit,
+  VisitDate,
+  currentRatingFrom,
+  diaryOrder,
+  type StoredVisit,
+} from "./visit-schemas.js";
+
+export { InvalidRating } from "./invalid-rating.js";
+
+export { InvalidVisitDate } from "./invalid-visit-date.js";
+
+export { Visits, type NewVisit, type VisitsService } from "./visits.js";
+
+export {
   HealthReport,
   NextAction,
   health,
