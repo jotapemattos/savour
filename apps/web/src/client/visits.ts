@@ -1,4 +1,9 @@
 import { DiaryEntry } from "@savour/core/contracts";
+import type {
+  InvalidRating,
+  InvalidVisitDate,
+  LogVisitInput,
+} from "@savour/core/contracts";
 import { queryOptions } from "@tanstack/react-query";
 import { Effect, Schema } from "effect";
 
@@ -11,7 +16,16 @@ export const DiaryRead = Schema.TaggedStruct("DiaryRead", {
 
 export const DiarySignedOut = Schema.TaggedStruct("DiarySignedOut", {});
 
+export const VisitLogged = Schema.TaggedStruct("VisitLogged", {
+  visit: DiaryEntry,
+});
+
 export type DiaryOutcome = typeof DiaryRead.Type | typeof DiarySignedOut.Type;
+
+export type LogOutcome =
+  | typeof VisitLogged.Type
+  | InvalidRating
+  | InvalidVisitDate;
 
 const readDiary = (transport: ApiTransport) =>
   savourApi(transport).pipe(
@@ -32,3 +46,21 @@ export const diaryQuery = (transport: ApiTransport) =>
     queryKey: ["visits", "diary"],
     retry: false,
   });
+
+export const logVisit = (
+  transport: ApiTransport,
+  input: typeof LogVisitInput.Type
+) =>
+  savourApi(transport).pipe(
+    Effect.flatMap((client) =>
+      client.capabilities.logVisit({ payload: input })
+    ),
+    Effect.map((logged): LogOutcome =>
+      VisitLogged.make({ visit: logged.visit })
+    ),
+    Effect.catchTags({
+      InvalidRating: (refusal) => Effect.succeed<LogOutcome>(refusal),
+      InvalidVisitDate: (refusal) => Effect.succeed<LogOutcome>(refusal),
+    }),
+    Effect.provide(transport.layer)
+  );

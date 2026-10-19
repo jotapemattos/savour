@@ -26,7 +26,10 @@ const keySteps = new Map([
   ["Home", () => LOWEST],
 ]);
 
-export const RatingInput = (props: { readonly name: string }) => {
+export const RatingInput = (props: {
+  readonly error?: string | undefined;
+  readonly name: string;
+}) => {
   const [rating, setRating] = useState<number | null>(null);
 
   const step = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -58,6 +61,10 @@ export const RatingInput = (props: { readonly name: string }) => {
         Rating
       </span>
       <div
+        aria-describedby={
+          props.error === undefined ? undefined : "rating-error"
+        }
+        aria-invalid={props.error !== undefined}
         aria-labelledby="rating-label"
         aria-valuemax={HIGHEST}
         aria-valuemin={LOWEST}
@@ -76,6 +83,11 @@ export const RatingInput = (props: { readonly name: string }) => {
           ))}
         </span>
       </div>
+      {props.error === undefined ? null : (
+        <p className="text-destructive text-sm text-pretty" id="rating-error">
+          {props.error}
+        </p>
+      )}
       {rating === null ? null : (
         <input name={props.name} type="hidden" value={rating} />
       )}

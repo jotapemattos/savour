@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "@effect/vitest";
-import { Unauthenticated } from "@savour/core";
+import { InvalidVisitDate, Unauthenticated } from "@savour/core";
 import { RouterProvider } from "@tanstack/react-router";
 import {
   cleanup,
@@ -8,7 +8,7 @@ import {
   screen,
   within,
 } from "@testing-library/react";
-import { Effect, Schedule } from "effect";
+import { DateTime, Effect, Schedule } from "effect";
 
 import { RatingInput } from "../src/features/visits/rating-input";
 import { createSavourRouter } from "../src/savour-router";
@@ -22,6 +22,14 @@ import type { ScriptedReply } from "./fixtures/scripted-api";
 afterEach(cleanup);
 
 const DIARY = "GET /api/diary";
+
+const SEARCH = "GET /api/restaurants/search";
+
+const LOG = "POST /api/visits";
+
+const today = DateTime.formatIsoDate(
+  DateTime.setZone(DateTime.nowUnsafe(), DateTime.zoneMakeLocal())
+);
 
 const appeared = <A,>(find: () => A) =>
   Effect.try(find).pipe(
@@ -67,6 +75,11 @@ const diaryOf = (
   status: 200,
 });
 
+const loggedAs = (visit: ReturnType<typeof entry>): ScriptedReply => ({
+  body: { next: [], visit },
+  status: 200,
+});
+
 const openAt = (
   path: string,
   script: Readonly<Record<string, ScriptedReply>>
@@ -79,7 +92,155 @@ const openAt = (
   );
 };
 
+const openLogSheet = (
+  script: Readonly<Record<string, ScriptedReply>>,
+  requests: string[] = [],
+  payloads: unknown[] = []
+) =>
+  Effect.gen(function* opensLogSheet() {
+    window.history.replaceState(null, "", "/search?q=pizzaria");
+
+    const api = scriptedApi(
+      {
+        [SEARCH]: { body: { next: [], results: [bellaNapoli] }, status: 200 },
+        ...script,
+      },
+      requests,
+      payloads
+    );
+
+    render(
+      <RouterProvider router={createSavourRouter(api, memorySession(api))} />
+    );
+
+    const logButton = yield* appeared(() =>
+      screen.getByRole("button", {
+        name: "Log a visit to Pizzaria Bella Napoli",
+      })
+    );
+
+    fireEvent.click(logButton);
+
+    return yield* appeared(() =>
+      screen.getByRole("dialog", { name: "Log a visit" })
+    );
+  });
+
+const save = (sheet: HTMLElement) => {
+  fireEvent.click(within(sheet).getByRole("button", { name: "Save visit" }));
+};
+
+const newestDiaryEntry = () => {
+  expect(window.location.pathname).toBe("/diary");
+  const [newest] = screen.getAllByRole("listitem");
+
+  return newest ?? document.body;
+};
+
 describe("log sheet and diary", () => {
+  it.live("completes logging at phone width", () =>
+    Effect.gen(function* completesLogging() {
+      const payloads: unknown[] = [];
+      const logged = entry("v3", { date: today, rating: 4 });
+
+      const sheet = yield* openLogSheet(
+        {
+          [DIARY]: diaryOf([
+            logged,
+            entry("v1", { date: "2026-09-02", rating: null }),
+          ]),
+          [LOG]: loggedAs(logged),
+        },
+        [],
+        payloads
+      );
+
+      const date = within(sheet).getByLabelText<HTMLInputElement>("Date");
+      const rating = within(sheet).getByRole("slider", { name: "Rating" });
+      fireEvent.click(rating.querySelector('[data-value="4"]') ?? rating);
+      save(sheet);
+
+      const newest = yield* appeared(newestDiaryEntry);
+
+      expect(window.innerWidth).toBe(375);
+      expect(date.value).toBe(today);
+      expect(payloads).toStrictEqual([
+        { date: today, placeId: bellaNapoli.placeId, rating: 4 },
+      ]);
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(newest.textContent).toContain("Pizzaria Bella Napoli");
+      expect(
+        within(newest).getByRole("img", { name: "4 stars" })
+      ).toBeDefined();
+    })
+  );
+
+  it.live("saves with only a date", () =>
+    Effect.gen(function* savesWithOnlyDate() {
+      const payloads: unknown[] = [];
+      const logged = entry("v4", { date: today, rating: null });
+
+      const sheet = yield* openLogSheet(
+        { [DIARY]: diaryOf([logged]), [LOG]: loggedAs(logged) },
+        [],
+        payloads
+      );
+
+      save(sheet);
+
+      const newest = yield* appeared(newestDiaryEntry);
+
+      expect(payloads).toStrictEqual([
+        { date: today, placeId: bellaNapoli.placeId },
+      ]);
+      expect(newest.textContent).toContain("Pizzaria Bella Napoli");
+      expect(within(newest).queryByRole("img")).toBeNull();
+    })
+  );
+
+  it.live("shows the typed failure without losing input", () =>
+    Effect.gen(function* showsTypedFailure() {
+      const sheet = yield* openLogSheet({
+        [LOG]: refusedWith(
+          InvalidVisitDate,
+          new InvalidVisitDate({ date: today, reason: "in-the-future" }),
+          400
+        ),
+      });
+
+      const review =
+        within(sheet).getByLabelText<HTMLTextAreaElement>("Review (optional)");
+
+      fireEvent.change(review, { target: { value: "Great crust" } });
+      save(sheet);
+
+      const error = yield* appeared(() =>
+        within(sheet).getByText("Pick today or an earlier day.")
+      );
+
+      const date = within(sheet).getByLabelText("Date");
+
+      expect(date.getAttribute("aria-invalid")).toBe("true");
+      expect(date.getAttribute("aria-describedby")).toBe(error.id);
+      expect(review.value).toBe("Great crust");
+      expect(window.location.pathname).toBe("/search");
+    })
+  );
+
+  it.live("closes on cancel without logging", () =>
+    Effect.gen(function* closesOnCancel() {
+      const requests: string[] = [];
+      const sheet = yield* openLogSheet({}, requests);
+
+      fireEvent.click(within(sheet).getByRole("button", { name: "Cancel" }));
+
+      yield* appeared(() => {
+        expect(screen.queryByRole("dialog")).toBeNull();
+      });
+      expect(requests).not.toContain(LOG);
+    })
+  );
+
   it.live("shows an empty diary that points to search", () =>
     Effect.gen(function* showsEmptyDiary() {
       openAt("/diary", { [DIARY]: diaryOf([]) });

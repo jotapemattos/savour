@@ -1,5 +1,5 @@
 import { Unauthenticated } from "@savour/core";
-import { Effect, Layer, Schema } from "effect";
+import { Effect, Layer, Predicate, Schema } from "effect";
 import { HttpClient, HttpClientResponse } from "effect/http";
 
 import { accountSession } from "../../src/client/account-session";
@@ -28,6 +28,10 @@ const signedOut = refusedWith(Unauthenticated, new Unauthenticated(), 401);
 
 const missing: ScriptedReply = { body: {}, status: 404 };
 
+const decodeJsonBody = Schema.decodeUnknownSync(
+  Schema.fromJsonString(Schema.Unknown)
+);
+
 export const signedInAs = (handle: string): ScriptedReply => ({
   body: {
     account: { email: `${handle}@example.test`, handle },
@@ -39,7 +43,8 @@ export const signedInAs = (handle: string): ScriptedReply => ({
 
 export const scriptedApi = (
   script: Readonly<Record<string, ScriptedReply>>,
-  requests: string[] = []
+  requests: string[] = [],
+  payloads: unknown[] = []
 ): ApiTransport => {
   const replies = new Map(
     Object.entries({
@@ -58,6 +63,12 @@ export const scriptedApi = (
           const route = `${request.method} ${url.pathname}`;
           const reply = replies.get(route) ?? missing;
           requests.push(route);
+
+          if (Predicate.isTagged(request.body, "Uint8Array")) {
+            payloads.push(
+              decodeJsonBody(new TextDecoder().decode(request.body.body))
+            );
+          }
 
           return HttpClientResponse.fromWeb(
             request,
