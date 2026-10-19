@@ -73,3 +73,11 @@ Parallel sessions (`claude --worktree`) check out full copies of the repo under 
 ## iCloud duplicates
 
 The repo sits in an iCloud-synced folder, and iCloud sometimes writes conflict copies named `<name> 2.<ext>` next to the original. In `apps/web` they are not harmless: a copied route adds a route such as `/sign-in 2`, and a copied test runs twice. Before validating, check `git status` for untracked `* 2.*` files, compare each with its original, and move them out of the repo. Never commit them, and never delete one that differs from its original without asking. Copies inside `dist/` and `.turbo/` are build output and can be left alone.
+
+## Core builds before app tests
+
+`@savour/core` exports its built `dist/`, so `apps/api` and `apps/web` tests import core's last build, not its source. Turbo builds core before `test`, but running vitest straight inside an app does not. After changing core, run `pnpm --filter @savour/core build` first. Otherwise new routes answer 404 and new exports are missing.
+
+## Effect.forEach in a pipe
+
+Inside a pipe, map rows effectfully with the data-last form, `Effect.flatMap(Effect.forEach((row) => ...))`. The data-first `Effect.forEach(rows, fn)` trips `unicorn/no-array-method-this-argument`, which reads the callback as a `thisArg`, and `Effect.all(rows.map(...))` trips the Effect diagnostic `allOfMapToForEach`.
