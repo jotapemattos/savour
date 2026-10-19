@@ -25,6 +25,14 @@ export { PlaceSearchUnavailable } from "./place-search-unavailable.js";
 
 export { RestaurantSearchResults } from "./restaurant-search-contracts.js";
 
+export { InvalidRating } from "./invalid-rating.js";
+
+export { InvalidVisitDate } from "./invalid-visit-date.js";
+
+export { LogVisitInput } from "./visit-contracts.js";
+
+export { Diary, DiaryEntry, Rating } from "./visit-schemas.js";
+
 export {
   HealthReport,
   NextAction,
