@@ -1,4 +1,4 @@
-import { Navigate } from "@tanstack/react-router";
+import { Link, Navigate } from "@tanstack/react-router";
 
 import { Button } from "#/components/ui/button";
 import { EmptyLog } from "#/features/shell/empty-log";
@@ -42,6 +42,12 @@ export const SignedInHome = (props: { readonly handle: string }) => {
         {signOut.isError ? failureMessage(signOut.error) : undefined}
       </p>
       <EmptyLog />
+      <Link
+        className="bg-primary text-primary-foreground focus-visible:outline-primary inline-flex h-11 items-center justify-center rounded-lg px-4 font-medium focus-visible:outline-2 focus-visible:outline-offset-2 active:opacity-90"
+        to="/search"
+      >
+        Find a restaurant
+      </Link>
     </div>
   );
 };
