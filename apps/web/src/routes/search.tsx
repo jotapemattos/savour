@@ -69,9 +69,12 @@ const SearchScreen = () => {
           initialQuery={q}
           locating={locate.isPending}
           onSearch={(next) => {
-            void navigate({ search: { q: next } });
-          }}
-          onSearchNear={(next) => {
+            if (location !== null) {
+              void navigate({ search: { q: next } });
+
+              return;
+            }
+
             locate.mutate(undefined, {
               onSuccess: (outcome) => {
                 setLocation(outcome);
