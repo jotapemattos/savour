@@ -217,6 +217,54 @@ describe("accounts", () => {
 });
 
 describe("simultaneous sign-ups", () => {
+  it.effect(
+    "answers HandleTaken when the handle was claimed between check and insert",
+    () =>
+      Effect.gen(function* answersHandleTaken() {
+        const response = yield* postJson("/accounts", ana);
+
+        expect(response.status).toBe(409);
+        expect(
+          yield* Schema.decodeUnknownEffect(HandleTaken)(yield* response.json)
+        ).toStrictEqual(new HandleTaken({ handle: "ana" }));
+      }).pipe(
+        Effect.provide(
+          serveWith(
+            uniqueMemoryAccounts({
+              claimedFirst: { email: "other@example.test", handle: "ana" },
+            })
+          )
+        )
+      )
+  );
+
+  it.effect(
+    "answers EmailTaken when the email was claimed between check and insert",
+    () =>
+      Effect.gen(function* answersEmailTaken() {
+        const response = yield* postJson("/accounts", {
+          ...ana,
+          handle: "ana_two",
+        });
+
+        expect(response.status).toBe(409);
+        expect(
+          yield* Schema.decodeUnknownEffect(EmailTaken)(yield* response.json)
+        ).toStrictEqual(new EmailTaken());
+      }).pipe(
+        Effect.provide(
+          serveWith(
+            uniqueMemoryAccounts({
+              claimedFirst: {
+                email: "ana@example.test",
+                handle: "someone_else",
+              },
+            })
+          )
+        )
+      )
+  );
+
   it.effect("still crashes on an insert failure with neither explanation", () =>
     Effect.gen(function* crashesOnBrokenInsert() {
       const response = yield* postJson("/accounts", ana);
@@ -225,5 +273,33 @@ describe("simultaneous sign-ups", () => {
     }).pipe(
       Effect.provide(serveWith(uniqueMemoryAccounts({ insertBreaks: true })))
     )
+  );
+
+  it.effect(
+    "creates exactly one account when two sign-ups race for one handle",
+    () =>
+      Effect.gen(function* createsOneAccount() {
+        const responses = yield* Effect.all(
+          [
+            postJson("/accounts", ana),
+            postJson("/accounts", { ...ana, email: "other@example.test" }),
+          ],
+          { concurrency: "unbounded" }
+        );
+
+        expect(
+          responses
+            .map((response) => response.status)
+            .toSorted((left, right) => left - right)
+        ).toStrictEqual([200, 409]);
+
+        const rejected = responses.find((response) => response.status === 409);
+
+        expect(
+          yield* Schema.decodeUnknownEffect(HandleTaken)(
+            yield* rejected?.json ?? Effect.succeed(null)
+          )
+        ).toStrictEqual(new HandleTaken({ handle: "ana" }));
+      }).pipe(Effect.provide(serveWith(uniqueMemoryAccounts({}))))
   );
 });

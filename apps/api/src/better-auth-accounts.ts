@@ -74,12 +74,15 @@ export const betterAuthAccounts = (secret?: BetterAuthProps["secret"]) =>
         secret === undefined ? authOptions : { ...authOptions, secret }
       );
 
+      const authContext = auth.auth.pipe(
+        Effect.flatMap((instance) =>
+          // oxlint-disable-next-line typescript/promise-function-async -- Better Auth exposes its adapter context as a native Promise.
+          Effect.promise(() => instance.$context)
+        )
+      );
+
       const handleIsTaken = (handle: string) =>
-        auth.auth.pipe(
-          Effect.flatMap((instance) =>
-            // oxlint-disable-next-line typescript/promise-function-async -- Better Auth exposes its adapter context as a native Promise.
-            Effect.promise(() => instance.$context)
-          ),
+        authContext.pipe(
           Effect.flatMap((context) =>
             Effect.promise(
               // oxlint-disable-next-line typescript/promise-function-async -- Better Auth's database adapter answers with native Promises.
@@ -92,6 +95,43 @@ export const betterAuthAccounts = (secret?: BetterAuthProps["secret"]) =>
           ),
           Effect.map((user) => user !== null)
         );
+
+      const emailIsTaken = (email: string) =>
+        authContext.pipe(
+          Effect.flatMap((context) =>
+            Effect.promise(
+              // oxlint-disable-next-line typescript/promise-function-async -- Better Auth's internal adapter answers with native Promises.
+              () => context.internalAdapter.findUserByEmail(email)
+            )
+          ),
+          Effect.map((found) => found !== null)
+        );
+
+      const explainSignUpFailure = (
+        { email, handle }: { readonly email: string; readonly handle: string },
+        apiFailure: BetterAuthApiError
+      ) =>
+        Effect.gen(function* findWhoClaimedIt() {
+          const code = apiFailure.body?.code;
+
+          if (code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
+            return yield* new EmailTaken();
+          }
+
+          if (code !== "FAILED_TO_CREATE_USER") {
+            return yield* Effect.die(apiFailure);
+          }
+
+          if (yield* handleIsTaken(handle)) {
+            return yield* new HandleTaken({ handle });
+          }
+
+          if (yield* emailIsTaken(email)) {
+            return yield* new EmailTaken();
+          }
+
+          return yield* Effect.die(apiFailure);
+        });
 
       const accountForSession = (token: string) =>
         auth.getSession(bearerHeaders(token)).pipe(
@@ -134,13 +174,15 @@ export const betterAuthAccounts = (secret?: BetterAuthProps["secret"]) =>
               return yield* new HandleTaken({ handle });
             }
 
-            const created = yield* failWhenCode(
-              auth.api.signUpEmail({
+            const created = yield* auth.api
+              .signUpEmail({
                 body: { email, handle, name: handle, password },
-              }),
-              "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL",
-              new EmailTaken()
-            );
+              })
+              .pipe(
+                Effect.catchTag("BetterAuthApiError", (apiFailure) =>
+                  explainSignUpFailure({ email, handle }, apiFailure)
+                )
+              );
 
             return yield* decodeSignedIn({
               account: created.user,
