@@ -48,6 +48,12 @@ export const SignedInHome = (props: { readonly handle: string }) => {
       >
         Find a restaurant
       </Link>
+      <Link
+        className="text-muted-foreground hover:text-foreground focus-visible:outline-primary active:bg-muted inline-flex h-10 items-center justify-center rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2"
+        to="/diary"
+      >
+        Your diary
+      </Link>
     </div>
   );
 };
