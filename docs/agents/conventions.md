@@ -65,3 +65,11 @@ Infra tests that compile a Stack supply secrets with `ConfigProvider.layer(Confi
 ## Splitting a pushed card
 
 When a parked card is split after its branch was pushed, the first half ships from its own card and branch. Once it merges, the remaining half goes up on a new branch (`<card id>-<slice>`, such as `issue-22-screens`), rebased onto `main`, because rewriting the pushed branch would need a force-push. The old remote branch is left for the human to delete.
+
+## Agent worktrees
+
+Parallel sessions (`claude --worktree`) check out full copies of the repo under `.claude/worktrees/`. Lint and format must never see them. `oxfmt.config.ts` ignores `.claude/**`, and `ultracite check` and `ultracite fix` run with `--disable-nested-config`, because oxlint otherwise loads every worktree's `oxlint.config.ts` as a nested config and refuses to run. The repo has one lint config, at the root. Keep it that way instead of adding nested ones.
+
+## iCloud duplicates
+
+The repo sits in an iCloud-synced folder, and iCloud sometimes writes conflict copies named `<name> 2.<ext>` next to the original. In `apps/web` they are not harmless: a copied route adds a route such as `/sign-in 2`, and a copied test runs twice. Before validating, check `git status` for untracked `* 2.*` files, compare each with its original, and move them out of the repo. Never commit them, and never delete one that differs from its original without asking. Copies inside `dist/` and `.turbo/` are build output and can be left alone.
