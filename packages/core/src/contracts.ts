@@ -18,7 +18,7 @@ export {
   databaseHealthContract,
 } from "./database-health-contracts.js";
 
-export { Place, PriceLevel } from "./place-schemas.js";
+export { Place, PriceLevel, SearchQuery } from "./place-schemas.js";
 
 export { PlaceSearchUnavailable } from "./place-search-unavailable.js";
 

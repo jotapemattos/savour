@@ -19,6 +19,7 @@ export default defineConfig({
           },
           include: ["test/**/*.test.tsx"],
           name: "dom",
+          setupFiles: ["test/setup-dom.ts"],
         },
       },
       {
