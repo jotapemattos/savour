@@ -14,6 +14,63 @@ import type { ScriptedReply } from "./fixtures/scripted-api";
 
 afterEach(cleanup);
 
+afterEach(() => {
+  Reflect.deleteProperty(navigator, "geolocation");
+});
+
+const locatedAt = (latitude: number, longitude: number) => {
+  const asked: PositionOptions[] = [];
+
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: (
+        located: PositionCallback,
+        _refused: PositionErrorCallback,
+        options: PositionOptions
+      ) => {
+        asked.push(options);
+        located({
+          coords: {
+            accuracy: 20,
+            altitude: null,
+            altitudeAccuracy: null,
+            heading: null,
+            latitude,
+            longitude,
+            speed: null,
+            toJSON: () => ({ latitude, longitude }),
+          },
+          timestamp: 0,
+          toJSON: () => ({ latitude, longitude }),
+        });
+      },
+    },
+  });
+
+  return asked;
+};
+
+const locationDenied = () => {
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: (
+        _located: PositionCallback,
+        refused: PositionErrorCallback
+      ) => {
+        refused({
+          PERMISSION_DENIED: 1,
+          POSITION_UNAVAILABLE: 2,
+          TIMEOUT: 3,
+          code: 1,
+          message: "User denied Geolocation",
+        });
+      },
+    },
+  });
+};
+
 const SEARCH = "GET /api/restaurants/search";
 
 const appeared = <A,>(find: () => A) =>
@@ -51,10 +108,11 @@ const pizzaria = {
 const openSearch = (
   reply: ScriptedReply,
   requests: string[] = [],
-  path = "/search"
+  path = "/search",
+  urls: URL[] = []
 ) => {
   window.history.replaceState(null, "", path);
-  const api = scriptedApi({ [SEARCH]: reply }, requests);
+  const api = scriptedApi({ [SEARCH]: reply }, requests, [], urls);
 
   render(
     <RouterProvider router={createSavourRouter(api, memorySession(api))} />
@@ -177,6 +235,83 @@ describe("restaurant search screen", () => {
 
       expect(searches(requests)).toStrictEqual([]);
       expect(screen.queryByRole("alert")).toBeNull();
+    })
+  );
+
+  it.live("doesn't ask for the location before a tap", () =>
+    Effect.gen(function* staysQuietAboutLocation() {
+      const asked = locatedAt(-22.95123, -46.54321);
+      openSearch(found([pizzaria]));
+
+      yield* submitQuery("pizzaria");
+      yield* appeared(() => screen.getByText("Pizzaria Bella Napoli"));
+
+      expect(asked).toStrictEqual([]);
+    })
+  );
+
+  it.live("sends a rounded location after the person allows it", () =>
+    Effect.gen(function* searchesNearMe() {
+      const urls: URL[] = [];
+      const asked = locatedAt(-22.95123, -46.54321);
+      openSearch(found([pizzaria]), [], "/search", urls);
+
+      yield* typeQuery("pizzaria");
+      fireEvent.click(screen.getByRole("button", { name: "Search near me" }));
+
+      yield* appeared(() => screen.getByText("Pizzaria Bella Napoli"));
+
+      const searched = urls.filter(
+        (url) => url.pathname === "/api/restaurants/search"
+      );
+
+      expect(window.innerWidth).toBe(375);
+      expect(asked).toHaveLength(1);
+      expect(searched.map((url) => url.searchParams.get("near"))).toStrictEqual(
+        ["-22.95,-46.54"]
+      );
+      expect(screen.getByText("Showing places near you first.")).toBeDefined();
+      expect(window.location.search).not.toContain("near");
+    })
+  );
+
+  it.live("still searches when location is denied", () =>
+    Effect.gen(function* searchesWithoutLocation() {
+      const urls: URL[] = [];
+      locationDenied();
+      openSearch(found([pizzaria]), [], "/search", urls);
+
+      yield* typeQuery("pizzaria");
+      fireEvent.click(screen.getByRole("button", { name: "Search near me" }));
+
+      yield* appeared(() => screen.getByText("Pizzaria Bella Napoli"));
+
+      const searched = urls.filter(
+        (url) => url.pathname === "/api/restaurants/search"
+      );
+
+      expect(searched.map((url) => url.searchParams.has("near"))).toStrictEqual(
+        [false]
+      );
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(
+        screen.getAllByText(
+          "Location is off, so results aren’t sorted by distance."
+        )
+      ).toHaveLength(1);
+    })
+  );
+
+  it.live("doesn't ask for the location without a query", () =>
+    Effect.gen(function* needsQueryFirst() {
+      const asked = locatedAt(-22.95123, -46.54321);
+      openSearch(found([pizzaria]));
+
+      yield* appeared(() => screen.getByRole("searchbox"));
+      fireEvent.click(screen.getByRole("button", { name: "Search near me" }));
+
+      expect(asked).toStrictEqual([]);
+      expect(document.activeElement).toBe(screen.getByRole("searchbox"));
     })
   );
 });
