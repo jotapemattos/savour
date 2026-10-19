@@ -11,6 +11,7 @@ import { searchRestaurants } from "./restaurant-search-capabilities.js";
 export {
   Account,
   AccountReport,
+  SessionAccount,
   SignedIn,
   SignedInAccount,
   SignedOut,
@@ -28,6 +29,7 @@ export { Unauthenticated } from "./unauthenticated.js";
 
 export {
   currentAccount,
+  requireSessionToken,
   signIn,
   signOut,
   signUp,

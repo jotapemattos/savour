@@ -4,11 +4,11 @@ import type {
   BetterAuthProps,
 } from "@alchemy.run/better-auth";
 import {
-  Account,
   Accounts,
   EmailTaken,
   HandleTaken,
   InvalidCredentials,
+  SessionAccount,
   SignedInAccount,
   Unauthenticated,
 } from "@savour/core";
@@ -48,7 +48,7 @@ const withRuntime = <A, E>(
     })
   );
 
-const decodeAccount = Schema.decodeUnknownEffect(Account);
+const decodeSessionAccount = Schema.decodeUnknownEffect(SessionAccount);
 
 const decodeSignedIn = Schema.decodeUnknownEffect(SignedInAccount);
 
@@ -139,7 +139,10 @@ export const betterAuthAccounts = (secret?: BetterAuthProps["secret"]) =>
           Effect.flatMap((session) =>
             session === null
               ? Effect.fail(new Unauthenticated())
-              : decodeAccount(session.user).pipe(Effect.orDie)
+              : decodeSessionAccount({
+                  account: session.user,
+                  accountId: session.user.id,
+                }).pipe(Effect.orDie)
           ),
           withRuntime
         );

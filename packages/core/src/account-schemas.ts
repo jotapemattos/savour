@@ -21,6 +21,11 @@ export const SessionToken = Schema.NonEmptyString;
 
 export const Account = Schema.Struct({ email: Email, handle: Handle });
 
+export const SessionAccount = Schema.Struct({
+  account: Account,
+  accountId: Schema.NonEmptyString,
+});
+
 export const SignedInAccount = Schema.Struct({
   account: Account,
   session: Schema.Struct({ token: SessionToken }),
