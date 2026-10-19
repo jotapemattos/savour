@@ -1,9 +1,16 @@
 import { afterEach, describe, expect, it } from "@effect/vitest";
 import { Unauthenticated } from "@savour/core";
 import { RouterProvider } from "@tanstack/react-router";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { Effect, Schedule } from "effect";
 
+import { RatingInput } from "../src/features/visits/rating-input";
 import { createSavourRouter } from "../src/savour-router";
 import {
   memorySession,
@@ -87,6 +94,36 @@ describe("log sheet and diary", () => {
       ).toContain("/search");
     })
   );
+
+  it("sets half stars by tap and by keyboard", () => {
+    render(<RatingInput name="rating" />);
+    const rating = screen.getByRole("slider", { name: "Rating" });
+    const announced = () => rating.getAttribute("aria-valuetext");
+
+    expect(announced()).toBe("No rating");
+
+    const leftHalfOfFourth = rating.querySelector('[data-value="3.5"]');
+    fireEvent.click(leftHalfOfFourth ?? rating);
+
+    expect(announced()).toBe("3.5 stars");
+
+    rating.focus();
+    fireEvent.keyDown(rating, { key: "ArrowRight" });
+
+    expect(announced()).toBe("4 stars");
+    expect(rating.getAttribute("aria-valuenow")).toBe("4");
+
+    fireEvent.keyDown(rating, { key: "Home" });
+
+    expect(announced()).toBe("0.5 stars");
+
+    fireEvent.keyDown(rating, { key: "End" });
+
+    expect(announced()).toBe("5 stars");
+    expect(
+      document.querySelector<HTMLInputElement>('input[name="rating"]')?.value
+    ).toBe("5");
+  });
 
   it.live("lists visits as the API orders them, with their stars", () =>
     Effect.gen(function* listsVisits() {
