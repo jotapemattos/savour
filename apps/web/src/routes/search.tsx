@@ -1,4 +1,5 @@
 import { SearchQuery } from "@savour/core/contracts";
+import type { Place } from "@savour/core/contracts";
 import { useQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
@@ -7,11 +8,13 @@ import {
   useSearch,
 } from "@tanstack/react-router";
 import { Option, Schema } from "effect";
-import { MotionConfig } from "motion/react";
+import { AnimatePresence, MotionConfig } from "motion/react";
+import { useState } from "react";
 
 import { restaurantSearchQuery } from "#/client/restaurant-search";
 import { SearchForm } from "#/features/search/search-form";
 import { SearchOutcome } from "#/features/search/search-outcome";
+import { LogSheet } from "#/features/visits/log-sheet";
 
 const SearchParams = Schema.Struct({ q: Schema.optional(SearchQuery) });
 
@@ -22,6 +25,7 @@ const SearchScreen = () => {
   const { api } = useRouteContext({ from: "/search" });
   const navigate = useNavigate({ from: "/search" });
   const search = useQuery(restaurantSearchQuery(api, q));
+  const [logging, setLogging] = useState<typeof Place.Type | null>(null);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -38,8 +42,22 @@ const SearchScreen = () => {
             void navigate({ search: { q: next } });
           }}
         />
-        <SearchOutcome q={q} search={search} />
+        <SearchOutcome onLog={setLogging} q={q} search={search} />
       </section>
+      <AnimatePresence>
+        {logging === null ? null : (
+          <LogSheet
+            key={logging.placeId}
+            onClose={() => {
+              setLogging(null);
+            }}
+            onLogged={() => {
+              void navigate({ to: "/diary" });
+            }}
+            place={logging}
+          />
+        )}
+      </AnimatePresence>
     </MotionConfig>
   );
 };

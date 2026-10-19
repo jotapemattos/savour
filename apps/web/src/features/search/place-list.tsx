@@ -1,6 +1,8 @@
 import type { Place } from "@savour/core/contracts";
 import { motion, useReducedMotion } from "motion/react";
 
+import { Button } from "#/components/ui/button";
+
 const PRICE_LABELS = [
   "Free",
   "Inexpensive",
@@ -45,6 +47,7 @@ const PlaceDetails = (props: { readonly place: typeof Place.Type }) => {
 };
 
 export const PlaceList = (props: {
+  readonly onLog: (place: typeof Place.Type) => void;
   readonly places: readonly (typeof Place.Type)[];
 }) => {
   const reduceMotion = useReducedMotion() === true;
@@ -54,7 +57,7 @@ export const PlaceList = (props: {
       {props.places.map((place, index) => (
         <motion.li
           animate={{ opacity: 1, transform: "translateY(0px)" }}
-          className="flex min-w-0 flex-col gap-1 py-3"
+          className="flex min-w-0 items-start justify-between gap-3 py-3"
           initial={{
             opacity: 0,
             transform: reduceMotion ? "none" : "translateY(8px)",
@@ -66,11 +69,23 @@ export const PlaceList = (props: {
             ease: ENTER_EASE,
           }}
         >
-          <p className="font-medium text-pretty">{place.name}</p>
-          <p className="text-muted-foreground text-sm text-pretty">
-            {place.address}
-          </p>
-          <PlaceDetails place={place} />
+          <div className="flex min-w-0 flex-col gap-1">
+            <p className="font-medium text-pretty">{place.name}</p>
+            <p className="text-muted-foreground text-sm text-pretty">
+              {place.address}
+            </p>
+            <PlaceDetails place={place} />
+          </div>
+          <Button
+            className="text-foreground mx-0"
+            onClick={() => {
+              props.onLog(place);
+            }}
+            type="button"
+            variant="quiet"
+          >
+            Log a visit<span className="sr-only"> to {place.name}</span>
+          </Button>
         </motion.li>
       ))}
     </ul>
