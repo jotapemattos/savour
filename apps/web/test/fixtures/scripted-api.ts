@@ -44,7 +44,8 @@ export const signedInAs = (handle: string): ScriptedReply => ({
 export const scriptedApi = (
   script: Readonly<Record<string, ScriptedReply>>,
   requests: string[] = [],
-  payloads: unknown[] = []
+  payloads: unknown[] = [],
+  urls: URL[] = []
 ): ApiTransport => {
   const replies = new Map(
     Object.entries({
@@ -63,6 +64,7 @@ export const scriptedApi = (
           const route = `${request.method} ${url.pathname}`;
           const reply = replies.get(route) ?? missing;
           requests.push(route);
+          urls.push(url);
 
           if (Predicate.isTagged(request.body, "Uint8Array")) {
             payloads.push(

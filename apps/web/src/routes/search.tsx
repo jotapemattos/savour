@@ -1,16 +1,18 @@
 import { SearchQuery } from "@savour/core/contracts";
 import type { Place } from "@savour/core/contracts";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
   useNavigate,
   useRouteContext,
   useSearch,
 } from "@tanstack/react-router";
-import { Option, Schema } from "effect";
+import { Effect, Match, Option, Schema } from "effect";
 import { AnimatePresence, MotionConfig } from "motion/react";
 import { useState } from "react";
 
+import { approximateLocation } from "#/client/approximate-location";
+import type { LocationOutcome } from "#/client/approximate-location";
 import { restaurantSearchQuery } from "#/client/restaurant-search";
 import { SearchForm } from "#/features/search/search-form";
 import { SearchOutcome } from "#/features/search/search-outcome";
@@ -20,12 +22,39 @@ const SearchParams = Schema.Struct({ q: Schema.optional(SearchQuery) });
 
 const decodeSearchParams = Schema.decodeUnknownOption(SearchParams);
 
+const LocationNote = (props: { readonly location: LocationOutcome }) => (
+  <p className="text-muted-foreground text-sm text-pretty">
+    {Match.value(props.location).pipe(
+      Match.tag("Located", () => "Showing places near you first."),
+      Match.tag(
+        "LocationOff",
+        () => "Location is off, so results aren’t sorted by distance."
+      ),
+      Match.exhaustive
+    )}
+  </p>
+);
+
 const SearchScreen = () => {
   const { q } = useSearch({ from: "/search" });
   const { api } = useRouteContext({ from: "/search" });
   const navigate = useNavigate({ from: "/search" });
-  const search = useQuery(restaurantSearchQuery(api, q));
+  const [location, setLocation] = useState<LocationOutcome | null>(null);
+
+  const search = useQuery(
+    restaurantSearchQuery(
+      api,
+      q,
+      location?._tag === "Located" ? location.near : undefined
+    )
+  );
+
   const [logging, setLogging] = useState<typeof Place.Type | null>(null);
+
+  const locate = useMutation({
+    // oxlint-disable-next-line typescript/promise-function-async -- TanStack Query runs mutation functions as native Promises.
+    mutationFn: () => Effect.runPromise(approximateLocation),
+  });
 
   return (
     <MotionConfig reducedMotion="user">
@@ -38,10 +67,20 @@ const SearchScreen = () => {
         </h2>
         <SearchForm
           initialQuery={q}
+          locating={locate.isPending}
           onSearch={(next) => {
             void navigate({ search: { q: next } });
           }}
+          onSearchNear={(next) => {
+            locate.mutate(undefined, {
+              onSuccess: (outcome) => {
+                setLocation(outcome);
+                void navigate({ search: { q: next } });
+              },
+            });
+          }}
         />
+        {location === null ? null : <LocationNote location={location} />}
         <SearchOutcome onLog={setLogging} q={q} search={search} />
       </section>
       <AnimatePresence>

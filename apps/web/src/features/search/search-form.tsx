@@ -1,6 +1,6 @@
 import { SearchQuery } from "@savour/core/contracts";
 import { Option, Schema } from "effect";
-import type { SubmitEvent } from "react";
+import type { MouseEvent, SubmitEvent } from "react";
 
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
@@ -8,24 +8,37 @@ import { Label } from "#/components/ui/label";
 
 const decodeQuery = Schema.decodeUnknownOption(SearchQuery);
 
+const readQuery = (form: HTMLFormElement | null) => {
+  const field = form?.elements.namedItem("q");
+
+  if (!(field instanceof HTMLInputElement)) {
+    return Option.none();
+  }
+
+  const query = decodeQuery(field.value.trim());
+
+  if (Option.isNone(query)) {
+    field.focus();
+  }
+
+  return query;
+};
+
 export const SearchForm = (props: {
   readonly initialQuery: string | undefined;
+  readonly locating: boolean;
   readonly onSearch: (q: string) => void;
+  readonly onSearchNear: (q: string) => void;
 }) => {
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const field = event.currentTarget.elements.namedItem("q");
+    Option.map(readQuery(event.currentTarget), props.onSearch);
+  };
 
-    if (!(field instanceof HTMLInputElement)) {
-      return;
+  const searchNear = (event: MouseEvent<HTMLButtonElement>) => {
+    if (!props.locating) {
+      Option.map(readQuery(event.currentTarget.form), props.onSearchNear);
     }
-
-    Option.match(decodeQuery(field.value.trim()), {
-      onNone: () => {
-        field.focus();
-      },
-      onSome: props.onSearch,
-    });
   };
 
   return (
@@ -46,6 +59,15 @@ export const SearchForm = (props: {
           Search
         </Button>
       </div>
+      <Button
+        aria-disabled={props.locating}
+        className="self-start"
+        onClick={searchNear}
+        type="button"
+        variant="quiet"
+      >
+        {props.locating ? "Locating…" : "Search near me"}
+      </Button>
     </form>
   );
 };
