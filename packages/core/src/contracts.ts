@@ -7,6 +7,7 @@ import {
 import { databaseHealthContract } from "./database-health-contracts.js";
 import { healthContract } from "./health-contracts.js";
 import { searchRestaurantsContract } from "./restaurant-search-contracts.js";
+import { diaryContract, logVisitContract } from "./visit-contracts.js";
 
 export { SignInInput, SignUpInput } from "./account-contracts.js";
 
@@ -38,4 +39,6 @@ export const contracts = [
   signOutContract,
   currentAccountContract,
   searchRestaurantsContract,
+  logVisitContract,
+  diaryContract,
 ] as const;

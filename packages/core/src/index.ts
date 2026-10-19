@@ -7,6 +7,7 @@ import {
 import { databaseHealth } from "./database-health-capabilities.js";
 import { health } from "./health-capabilities.js";
 import { searchRestaurants } from "./restaurant-search-capabilities.js";
+import { diary, logVisit } from "./visit-capabilities.js";
 
 export {
   Account,
@@ -93,6 +94,10 @@ export { InvalidVisitDate } from "./invalid-visit-date.js";
 
 export { Visits, type NewVisit, type VisitsService } from "./visits.js";
 
+export { LogVisitInput } from "./visit-contracts.js";
+
+export { logVisitAction, readDiaryAction } from "./visit-capabilities.js";
+
 export {
   HealthReport,
   NextAction,
@@ -109,4 +114,6 @@ export const capabilities = [
   signOut,
   currentAccount,
   searchRestaurants,
+  logVisit,
+  diary,
 ] as const;
