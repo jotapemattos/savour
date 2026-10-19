@@ -19,6 +19,7 @@ import { HttpBody, HttpClient, HttpRouter } from "effect/http";
 import { apiRoutes } from "../src/app.js";
 import { FakePlaceSearch } from "./fixtures/fake-place-search.js";
 import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
+import { uniqueMemoryAccounts } from "./fixtures/unique-memory-accounts.js";
 
 const ana = {
   email: "ana@example.test",
@@ -26,14 +27,19 @@ const ana = {
   password: "correct horse 9",
 };
 
-const ServedApi = HttpRouter.serve(
-  apiRoutes.pipe(
-    Layer.provide(MemoryAccounts),
-    Layer.provide(FakePlaceSearch),
-    Layer.provide(Layer.succeed(Database, { selectOne: Effect.succeed<1>(1) }))
-  ),
-  { disableListenLog: true, disableLogger: true }
-).pipe(Layer.provideMerge(NodeHttpServer.layerTest), withTestRuntime);
+const serveWith = (accounts: typeof MemoryAccounts) =>
+  HttpRouter.serve(
+    apiRoutes.pipe(
+      Layer.provide(accounts),
+      Layer.provide(FakePlaceSearch),
+      Layer.provide(
+        Layer.succeed(Database, { selectOne: Effect.succeed<1>(1) })
+      )
+    ),
+    { disableListenLog: true, disableLogger: true }
+  ).pipe(Layer.provideMerge(NodeHttpServer.layerTest), withTestRuntime);
+
+const ServedApi = serveWith(MemoryAccounts);
 
 const postJson = (path: string, body: Record<string, string>) =>
   HttpClient.post(path, { body: HttpBody.jsonUnsafe(body) });
@@ -207,5 +213,17 @@ describe("accounts", () => {
 
       expect(response.status).toBe(401);
     }).pipe(Effect.provide(ServedApi))
+  );
+});
+
+describe("simultaneous sign-ups", () => {
+  it.effect("still crashes on an insert failure with neither explanation", () =>
+    Effect.gen(function* crashesOnBrokenInsert() {
+      const response = yield* postJson("/accounts", ana);
+
+      expect(response.status).toBe(500);
+    }).pipe(
+      Effect.provide(serveWith(uniqueMemoryAccounts({ insertBreaks: true })))
+    )
   );
 });
