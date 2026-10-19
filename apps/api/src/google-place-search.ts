@@ -1,9 +1,11 @@
 import { PlaceSearch, PlaceSearchUnavailable } from "@savour/core";
-import type { Place, PriceLevel } from "@savour/core";
-import { Clock, Effect, Layer, Redacted, Schema } from "effect";
+import type { LatLng, Place, PriceLevel } from "@savour/core";
+import { Clock, Effect, Layer, Option, Redacted, Schema } from "effect";
 import { HttpClient, HttpClientRequest } from "effect/http";
 
 const PLACES_API = "https://places.googleapis.com/v1";
+
+const NEARBY_RADIUS_METERS = 30_000;
 
 type Operation = "places.details" | "places.search";
 
@@ -56,6 +58,21 @@ const toPlace = (place: typeof GooglePlace.Type): typeof Place.Type => ({
   name: place.displayName.text,
   placeId: place.id,
   priceLevel: PRICE_LEVELS.get(place.priceLevel ?? "") ?? null,
+});
+
+const textSearchBody = (
+  query: string,
+  near: Option.Option<typeof LatLng.Type>
+) => ({
+  languageCode: "pt-BR",
+  ...Option.match(near, {
+    onNone: () => ({}),
+    onSome: (center) => ({
+      locationBias: { circle: { center, radius: NEARBY_RADIUS_METERS } },
+    }),
+  }),
+  regionCode: "BR",
+  textQuery: query,
 });
 
 const unexpectedAnswer = () =>
@@ -143,7 +160,7 @@ export const googlePlaceSearch = (apiKey: Redacted.Redacted) =>
 
             return toPlace(place);
           }),
-        search: (query) =>
+        search: (query, near) =>
           Effect.gen(function* searchText() {
             const startedAt = yield* Clock.currentTimeMillis;
 
@@ -154,7 +171,7 @@ export const googlePlaceSearch = (apiKey: Redacted.Redacted) =>
                   "x-goog-fieldmask",
                   PLACE_FIELDS.map((field) => `places.${field}`).join(",")
                 ),
-                HttpClientRequest.bodyJsonUnsafe({ textQuery: query })
+                HttpClientRequest.bodyJsonUnsafe(textSearchBody(query, near))
               )
             );
 
@@ -163,7 +180,9 @@ export const googlePlaceSearch = (apiKey: Redacted.Redacted) =>
               Effect.mapError(unexpectedAnswer)
             );
 
-            yield* answered("places.search", startedAt, places);
+            yield* answered("places.search", startedAt, places).pipe(
+              Effect.annotateLogs({ biased: Option.isSome(near) })
+            );
 
             return places.map(toPlace);
           }),

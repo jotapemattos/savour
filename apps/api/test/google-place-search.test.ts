@@ -1,6 +1,14 @@
 import { describe, expect, it } from "@effect/vitest";
 import { PlaceSearch, PlaceSearchUnavailable } from "@savour/core";
-import { Effect, Exit, Layer, Logger, Predicate, Redacted } from "effect";
+import {
+  Effect,
+  Exit,
+  Layer,
+  Logger,
+  Option,
+  Predicate,
+  Redacted,
+} from "effect";
 import { HttpClient, HttpClientError, HttpClientResponse } from "effect/http";
 import type { HttpClientRequest } from "effect/http";
 
@@ -66,7 +74,14 @@ const sushiPlace = {
 };
 
 const search = (query: string) =>
-  PlaceSearch.use((placeSearch) => placeSearch.search(query));
+  PlaceSearch.use((placeSearch) => placeSearch.search(query, Option.none()));
+
+const braganca = { latitude: -22.95, longitude: -46.54 };
+
+const searchNear = (query: string) =>
+  PlaceSearch.use((placeSearch) =>
+    placeSearch.search(query, Option.some(braganca))
+  );
 
 describe("Google Places adapter", () => {
   it.effect("maps cuisine and price level", () =>
@@ -130,7 +145,11 @@ describe("Google Places adapter", () => {
         expect(places).toStrictEqual([]);
         expect(google.seen).toHaveLength(1);
         expect(google.seen[0]).toMatchObject({
-          body: JSON.stringify({ textQuery: "pizzaria" }),
+          body: JSON.stringify({
+            languageCode: "pt-BR",
+            regionCode: "BR",
+            textQuery: "pizzaria",
+          }),
           method: "POST",
           url: "https://places.googleapis.com/v1/places:searchText",
         });
@@ -139,6 +158,60 @@ describe("Google Places adapter", () => {
           "places.id,places.displayName,places.formattedAddress,places.primaryType,places.priceLevel"
         );
       })
+  );
+
+  it.effect("pins every search to Brazil", () =>
+    Effect.gen(function* pinsToBrazil() {
+      const google = googleAnswering(200, "{}");
+
+      yield* search("pizzaria").pipe(Effect.provide(google.layer));
+
+      const body: unknown = JSON.parse(google.seen[0]?.body ?? "{}");
+
+      expect(body).toMatchObject({ languageCode: "pt-BR", regionCode: "BR" });
+      expect(body).not.toHaveProperty("locationBias");
+    })
+  );
+
+  it.effect("biases results toward the given location", () =>
+    Effect.gen(function* biasesNear() {
+      const google = googleAnswering(200, "{}");
+
+      yield* searchNear("pizzaria").pipe(Effect.provide(google.layer));
+
+      expect(JSON.parse(google.seen[0]?.body ?? "{}")).toStrictEqual({
+        languageCode: "pt-BR",
+        locationBias: {
+          circle: {
+            center: { latitude: -22.95, longitude: -46.54 },
+            radius: 30_000,
+          },
+        },
+        regionCode: "BR",
+        textQuery: "pizzaria",
+      });
+    })
+  );
+
+  it.effect("logs whether the search was biased, never the location", () =>
+    Effect.gen(function* logsBiasedOnly() {
+      const google = googleAnswering(
+        200,
+        JSON.stringify({ places: [sushiPlace] })
+      );
+
+      yield* searchNear("sushi").pipe(Effect.provide(google.layer));
+      yield* search("sushi").pipe(Effect.provide(google.layer));
+
+      expect(
+        google.entries.map((entry) => entry.annotations.biased)
+      ).toStrictEqual([true, false]);
+
+      const logged = JSON.stringify(google.entries);
+
+      expect(logged).not.toContain("-22.95");
+      expect(logged).not.toContain("-46.54");
+    })
   );
 
   it.effect("reads one place with Place Details", () =>
