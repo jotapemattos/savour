@@ -131,6 +131,9 @@ const submitQuery = (value: string) =>
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
   });
 
+const searchesTo = (urls: readonly URL[]) =>
+  urls.filter((url) => url.pathname === "/api/restaurants/search");
+
 const searches = (requests: readonly string[]) =>
   requests.filter((request) => request === SEARCH);
 
@@ -238,15 +241,18 @@ describe("restaurant search screen", () => {
     })
   );
 
-  it.live("doesn't ask for the location before a tap", () =>
-    Effect.gen(function* staysQuietAboutLocation() {
+  it.live("doesn't ask for the location when the page opens", () =>
+    Effect.gen(function* staysQuietOnLoad() {
+      const urls: URL[] = [];
       const asked = locatedAt(-22.95123, -46.54321);
-      openSearch(found([pizzaria]));
+      openSearch(found([pizzaria]), [], "/search?q=pizzaria", urls);
 
-      yield* submitQuery("pizzaria");
       yield* appeared(() => screen.getByText("Pizzaria Bella Napoli"));
 
       expect(asked).toStrictEqual([]);
+      expect(
+        searchesTo(urls).map((url) => url.searchParams.has("near"))
+      ).toStrictEqual([false]);
     })
   );
 
@@ -256,22 +262,37 @@ describe("restaurant search screen", () => {
       const asked = locatedAt(-22.95123, -46.54321);
       openSearch(found([pizzaria]), [], "/search", urls);
 
-      yield* typeQuery("pizzaria");
-      fireEvent.click(screen.getByRole("button", { name: "Search near me" }));
+      yield* submitQuery("pizzaria");
 
       yield* appeared(() => screen.getByText("Pizzaria Bella Napoli"));
 
-      const searched = urls.filter(
-        (url) => url.pathname === "/api/restaurants/search"
-      );
-
       expect(window.innerWidth).toBe(375);
       expect(asked).toHaveLength(1);
-      expect(searched.map((url) => url.searchParams.get("near"))).toStrictEqual(
-        ["-22.95,-46.54"]
-      );
+      expect(
+        searchesTo(urls).map((url) => url.searchParams.get("near"))
+      ).toStrictEqual(["-22.95,-46.54"]);
       expect(screen.getByText("Showing places near you first.")).toBeDefined();
       expect(window.location.search).not.toContain("near");
+    })
+  );
+
+  it.live("asks for the location once and reuses it", () =>
+    Effect.gen(function* reusesLocation() {
+      const urls: URL[] = [];
+      const asked = locatedAt(-22.95123, -46.54321);
+      openSearch(found([pizzaria]), [], "/search", urls);
+
+      yield* submitQuery("pizzaria");
+      yield* appeared(() => screen.getByText("Pizzaria Bella Napoli"));
+      yield* submitQuery("sushi");
+      yield* appeared(() => {
+        expect(searchesTo(urls)).toHaveLength(2);
+      });
+
+      expect(asked).toHaveLength(1);
+      expect(
+        searchesTo(urls).map((url) => url.searchParams.get("near"))
+      ).toStrictEqual(["-22.95,-46.54", "-22.95,-46.54"]);
     })
   );
 
@@ -281,18 +302,13 @@ describe("restaurant search screen", () => {
       locationDenied();
       openSearch(found([pizzaria]), [], "/search", urls);
 
-      yield* typeQuery("pizzaria");
-      fireEvent.click(screen.getByRole("button", { name: "Search near me" }));
+      yield* submitQuery("pizzaria");
 
       yield* appeared(() => screen.getByText("Pizzaria Bella Napoli"));
 
-      const searched = urls.filter(
-        (url) => url.pathname === "/api/restaurants/search"
-      );
-
-      expect(searched.map((url) => url.searchParams.has("near"))).toStrictEqual(
-        [false]
-      );
+      expect(
+        searchesTo(urls).map((url) => url.searchParams.has("near"))
+      ).toStrictEqual([false]);
       expect(screen.queryByRole("alert")).toBeNull();
       expect(
         screen.getAllByText(
@@ -307,8 +323,7 @@ describe("restaurant search screen", () => {
       const asked = locatedAt(-22.95123, -46.54321);
       openSearch(found([pizzaria]));
 
-      yield* appeared(() => screen.getByRole("searchbox"));
-      fireEvent.click(screen.getByRole("button", { name: "Search near me" }));
+      yield* submitQuery("   ");
 
       expect(asked).toStrictEqual([]);
       expect(document.activeElement).toBe(screen.getByRole("searchbox"));

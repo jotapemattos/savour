@@ -17,13 +17,15 @@ const toKilometre = (degrees: number) => Math.round(degrees * 100) / 100;
 
 export const approximateLocation: Effect.Effect<LocationOutcome> =
   Effect.callback((resume) => {
-    if (!("geolocation" in navigator)) {
+    const geolocation: Geolocation | null | undefined = navigator.geolocation;
+
+    if (geolocation === null || geolocation === undefined) {
       resume(Effect.succeed(LocationOff.make({})));
 
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
+    geolocation.getCurrentPosition(
       ({ coords }) => {
         resume(
           Effect.succeed(
