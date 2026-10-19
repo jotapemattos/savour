@@ -82,3 +82,11 @@ The repo sits in an iCloud-synced folder, and iCloud sometimes writes conflict c
 ## Effect.forEach in a pipe
 
 Inside a pipe, map rows effectfully with the data-last form, `Effect.flatMap(Effect.forEach((row) => ...))`. The data-first `Effect.forEach(rows, fn)` trips `unicorn/no-array-method-this-argument`, which reads the callback as a `thisArg`, and `Effect.all(rows.map(...))` trips the Effect diagnostic `allOfMapToForEach`.
+
+## The pre-commit hook checks the whole tree
+
+Lefthook runs `pnpm check` and `pnpm test` against the working tree, not the staged files. A lint error in an unstaged file blocks every commit, so run `pnpm fix` and then `pnpm lint` before committing. The hook never proves that a commit is green in isolation. When a commit must stand alone, check it out and run the gate on it.
+
+## Screenshots in headless Chromium
+
+Motion's animations never advance in headless Chromium, with or without `--virtual-time-budget`. Anything that enters with Motion stays at its `initial` values, such as `opacity: 0` or `translateY(100%)`, and screenshots come out blank. A throwaway screenshot page sets `MotionGlobalConfig.skipAnimations = true`, as `apps/web/test/setup-dom.ts` does for the DOM tests. TanStack Router parses search params as JSON, so `?sheet=1` arrives as the number `1`, not the string `"1"`.
