@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Effect, Exit, Layer } from "effect";
+import { Effect, Exit, Layer, Option, Schema } from "effect";
 
 import {
   PlaceSearch,
@@ -8,7 +8,7 @@ import {
   searchRestaurants,
   searchRestaurantsContract,
 } from "../src/index.js";
-import type { Place } from "../src/index.js";
+import type { LatLng, Place } from "../src/index.js";
 
 const pizzariaBraganca: typeof Place.Type = {
   address: "R. Cel. Teófilo Leme, 1240 - Centro, Bragança Paulista - SP",
@@ -28,19 +28,21 @@ const ramenCampinas: typeof Place.Type = {
 
 const answering = (places: readonly (typeof Place.Type)[]) => {
   const queries: string[] = [];
+  const nears: Option.Option<typeof LatLng.Type>[] = [];
 
   const layer = Layer.succeed(PlaceSearch, {
     details: () =>
       Effect.fail(new PlaceSearchUnavailable({ reason: "refused" })),
-    search: (query) =>
+    search: (query, near) =>
       Effect.sync(() => {
         queries.push(query);
+        nears.push(near);
 
         return places;
       }),
   });
 
-  return { layer, queries };
+  return { layer, nears, queries };
 };
 
 describe("restaurant search", () => {
@@ -96,6 +98,66 @@ describe("restaurant search", () => {
 
       expect(exit).toStrictEqual(Exit.fail(unavailable));
     })
+  );
+
+  it.effect("searches without a location when near is absent", () =>
+    Effect.gen(function* searchesAnywhere() {
+      const fake = answering([pizzariaBraganca]);
+
+      yield* searchRestaurants
+        .handler({ q: "pizzaria" })
+        .pipe(Effect.provide(fake.layer));
+
+      expect(fake.nears).toStrictEqual([Option.none()]);
+    })
+  );
+
+  it.effect("hands the searcher's location to the place search", () =>
+    Effect.gen(function* searchesNear() {
+      const fake = answering([pizzariaBraganca]);
+
+      yield* searchRestaurants
+        .handler({
+          near: { latitude: -22.95, longitude: -46.54 },
+          q: "pizzaria",
+        })
+        .pipe(Effect.provide(fake.layer));
+
+      expect(fake.nears).toStrictEqual([
+        Option.some({ latitude: -22.95, longitude: -46.54 }),
+      ]);
+    })
+  );
+
+  it("reads near from `latitude,longitude` text", () => {
+    const decodeInput = Schema.decodeOption(searchRestaurantsContract.input);
+
+    expect(decodeInput({ near: "-22.95,-46.54", q: "pizzaria" })).toStrictEqual(
+      Option.some({
+        near: { latitude: -22.95, longitude: -46.54 },
+        q: "pizzaria",
+      })
+    );
+    expect(
+      Schema.encodeSync(searchRestaurantsContract.input)({
+        near: { latitude: -22.95, longitude: -46.54 },
+        q: "pizzaria",
+      })
+    ).toStrictEqual({ near: "-22.95,-46.54", q: "pizzaria" });
+  });
+
+  it.each(["-91,10", "10,181", "abc", "-22.95", "-22.95,-46.54,3", ""])(
+    "refuses near=%s",
+    (near) => {
+      expect(
+        Option.isNone(
+          Schema.decodeOption(searchRestaurantsContract.input)({
+            near,
+            q: "pizzaria",
+          })
+        )
+      ).toBe(true);
+    }
   );
 
   it("is a read-only, open-world GET route", () => {

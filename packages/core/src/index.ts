@@ -42,7 +42,7 @@ export { Accounts, type AccountsService } from "./accounts.js";
 
 export { SessionCredential } from "./session-credential.js";
 
-export { Place, PlaceId, PriceLevel } from "./place-schemas.js";
+export { LatLng, Place, PlaceId, PriceLevel } from "./place-schemas.js";
 
 export { PlaceSearchUnavailable } from "./place-search-unavailable.js";
 
