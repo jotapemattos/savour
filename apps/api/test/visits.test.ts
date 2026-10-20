@@ -133,9 +133,10 @@ const deleteAs = (token: string, visitId: string) =>
     headers: { authorization: `Bearer ${token}` },
   });
 
-const diaryOf = (token: string) =>
+const diaryOf = (token: string, q?: string) =>
   HttpClient.get("/diary", {
     headers: { authorization: `Bearer ${token}` },
+    urlParams: q === undefined ? {} : { q },
   }).pipe(
     Effect.flatMap((response) => response.json),
     Effect.flatMap(Schema.decodeUnknownEffect(Diary))
@@ -521,6 +522,36 @@ describe("diary edits and search", () => {
       expect(
         (yield* diaryOf(ana)).visits.map(({ id, rating }) => ({ id, rating }))
       ).toStrictEqual([{ id: visitId, rating: 3 }]);
+    }).pipe(onToday, Effect.provide(serveWith(memoryVisits())))
+  );
+
+  it.effect("searches the diary by dish tag", () =>
+    Effect.gen(function* searchesDishes() {
+      const token = yield* signUpAna;
+
+      yield* logAs(token, { date: "2026-10-01", dishes: ["tonkotsu ramen"] });
+      yield* logAs(token, { date: "2026-10-02", dishes: ["margherita"] });
+
+      const found = yield* diaryOf(token, "ramen");
+
+      expect(found.visits.map(({ dishes }) => dishes)).toStrictEqual([
+        ["tonkotsu ramen"],
+      ]);
+    }).pipe(onToday, Effect.provide(serveWith(memoryVisits())))
+  );
+
+  it.effect("searches by tag, case-insensitively", () =>
+    Effect.gen(function* searchesTags() {
+      const token = yield* signUpAna;
+
+      yield* logAs(token, { date: "2026-10-01", tags: ["Date Night"] });
+      yield* logAs(token, { date: "2026-10-02", tags: ["lunch"] });
+
+      const found = yield* diaryOf(token, "date night");
+
+      expect(found.visits.map(({ tags }) => tags)).toStrictEqual([
+        ["Date Night"],
+      ]);
     }).pipe(onToday, Effect.provide(serveWith(memoryVisits())))
   );
 });

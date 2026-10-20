@@ -14,7 +14,12 @@ import {
   editVisitContract,
   logVisitContract,
 } from "./visit-contracts.js";
-import { Rating, VisitDate, diaryOrder } from "./visit-schemas.js";
+import {
+  Rating,
+  VisitDate,
+  diaryOrder,
+  matchesDiaryQuery,
+} from "./visit-schemas.js";
 import type { Visit } from "./visit-schemas.js";
 import { Visits } from "./visits.js";
 
@@ -196,7 +201,7 @@ export const deleteVisit = implement(deleteVisitContract, ({ id }) =>
   })
 );
 
-export const diary = implement(diaryContract, () =>
+export const diary = implement(diaryContract, ({ q }) =>
   Effect.gen(function* readDiary() {
     const accountId = yield* signedInAccountId;
     const visits = yield* Visits;
@@ -204,7 +209,8 @@ export const diary = implement(diaryContract, () =>
 
     const visitsNewestFirst = stored
       .toSorted(diaryOrder)
-      .map(({ visit }) => visit);
+      .map(({ visit }) => visit)
+      .filter(matchesDiaryQuery(q ?? ""));
 
     return {
       next: [logVisitAction, editVisitAction, deleteVisitAction],

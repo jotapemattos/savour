@@ -58,6 +58,14 @@ export const VisitDeleted = Schema.Struct({
   next: Schema.Array(NextAction),
 });
 
+export const matchesDiaryQuery = (query: string) => {
+  const needle = query.trim().toLowerCase();
+
+  return ({ dishes, tags }: typeof Visit.Type) =>
+    needle === "" ||
+    [...dishes, ...tags].some((label) => label.toLowerCase().includes(needle));
+};
+
 export interface StoredVisit {
   readonly loggedAt: number;
   readonly visit: typeof Visit.Type;

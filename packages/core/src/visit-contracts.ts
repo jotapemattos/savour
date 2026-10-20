@@ -88,9 +88,9 @@ export const deleteVisitContract = defineContract("deleteVisit", {
 export const diaryContract = defineContract("diary", {
   annotations: { idempotent: true, readOnly: true },
   description:
-    "Read your own diary of visits with the bearer token, newest visit day first.",
+    "Read your own diary of visits with the bearer token, newest visit day first. Pass `q` to keep only the visits with a tag or dish that contains it, ignoring case.",
   failure: Schema.Union([Unauthenticated, DatabaseUnavailable]),
   http: { method: "GET", path: "/diary" },
-  input: Schema.Struct({}),
+  input: Schema.Struct({ q: Schema.optionalKey(Schema.String) }),
   output: Diary,
 });
