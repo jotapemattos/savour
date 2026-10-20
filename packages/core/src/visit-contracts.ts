@@ -6,7 +6,8 @@ import { InvalidRating } from "./invalid-rating.js";
 import { InvalidVisitDate } from "./invalid-visit-date.js";
 import { PlaceId } from "./place-schemas.js";
 import { Unauthenticated } from "./unauthenticated.js";
-import { Diary, LoggedVisit } from "./visit-schemas.js";
+import { VisitNotFound } from "./visit-not-found.js";
+import { Diary, LoggedVisit, VisitDeleted } from "./visit-schemas.js";
 
 export const LogVisitInput = Schema.Struct({
   date: Schema.String.annotate({
@@ -35,6 +36,53 @@ export const logVisitContract = defineContract("logVisit", {
   http: { method: "POST", path: "/visits" },
   input: LogVisitInput,
   output: LoggedVisit,
+});
+
+export const EditVisitInput = Schema.Struct({
+  date: Schema.optionalKey(
+    Schema.String.annotate({
+      description: "The day of the visit as `YYYY-MM-DD`, never in the future.",
+    })
+  ),
+  dishes: Schema.optionalKey(Schema.Array(Schema.String)),
+  id: Schema.String,
+  lovedIt: Schema.optionalKey(Schema.Boolean),
+  rating: Schema.optionalKey(
+    Schema.NullOr(
+      Schema.Finite.annotate({
+        description: "0.5 to 5 in half-star steps, or `null` to clear it.",
+      })
+    )
+  ),
+  review: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  revisit: Schema.optionalKey(Schema.Boolean),
+  tags: Schema.optionalKey(Schema.Array(Schema.String)),
+});
+
+export const editVisitContract = defineContract("editVisit", {
+  annotations: { idempotent: true },
+  description:
+    "Change one of your own visits by its `id`, with the bearer token. Send only the fields that change; `null` clears the rating or the review.",
+  failure: Schema.Union([
+    Unauthenticated,
+    VisitNotFound,
+    InvalidRating,
+    InvalidVisitDate,
+    DatabaseUnavailable,
+  ]),
+  http: { method: "PATCH", path: "/visits/:id" },
+  input: EditVisitInput,
+  output: LoggedVisit,
+});
+
+export const deleteVisitContract = defineContract("deleteVisit", {
+  annotations: { destructive: true, idempotent: true },
+  description:
+    "Delete one of your own visits by its `id`, with the bearer token. It can't be undone.",
+  failure: Schema.Union([Unauthenticated, VisitNotFound, DatabaseUnavailable]),
+  http: { method: "DELETE", path: "/visits/:id" },
+  input: Schema.Struct({ id: Schema.String }),
+  output: VisitDeleted,
 });
 
 export const diaryContract = defineContract("diary", {

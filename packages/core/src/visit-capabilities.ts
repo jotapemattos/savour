@@ -8,7 +8,12 @@ import { InvalidVisitDate } from "./invalid-visit-date.js";
 import type { Place } from "./place-schemas.js";
 import { PlaceSearch } from "./place-search.js";
 import { Restaurants } from "./restaurants.js";
-import { diaryContract, logVisitContract } from "./visit-contracts.js";
+import {
+  deleteVisitContract,
+  diaryContract,
+  editVisitContract,
+  logVisitContract,
+} from "./visit-contracts.js";
 import { Rating, VisitDate, diaryOrder } from "./visit-schemas.js";
 import type { Visit } from "./visit-schemas.js";
 import { Visits } from "./visits.js";
@@ -24,6 +29,20 @@ export const logVisitAction = {
     "Log a visit with `POST /visits` and the bearer token, after finding the restaurant with `GET /restaurants/search`.",
   href: "/visits",
   rel: "create-form",
+} as const;
+
+export const editVisitAction = {
+  description:
+    "Change one of your visits with `PATCH /visits/{id}` and the bearer token, sending only the fields that change.",
+  href: "/visits/{id}",
+  rel: "edit-form",
+} as const;
+
+export const deleteVisitAction = {
+  description:
+    "Delete one of your visits for good with `DELETE /visits/{id}` and the bearer token.",
+  href: "/visits/{id}",
+  rel: "delete",
 } as const;
 
 const signedInAccountId = Effect.gen(function* signedInAccountId() {
@@ -49,12 +68,24 @@ const visitDayOf = (date: string) =>
     return day;
   });
 
-const ratingOf = (rating: number | undefined) =>
-  rating === undefined
+const ratingOf = (
+  rating: number | null | undefined
+): Effect.Effect<typeof Rating.Type | null, InvalidRating> =>
+  rating === undefined || rating === null
     ? Effect.succeed(null)
     : Schema.decodeEffect(Rating)(rating).pipe(
         Effect.mapError(() => new InvalidRating({ rating }))
       );
+
+const dateChangeOf = (date: string | undefined) =>
+  date === undefined
+    ? Effect.succeed({})
+    : visitDayOf(date).pipe(Effect.map((day) => ({ date: day })));
+
+const ratingChangeOf = (rating: number | null | undefined) =>
+  rating === undefined
+    ? Effect.succeed({})
+    : ratingOf(rating).pipe(Effect.map((value) => ({ rating: value })));
 
 const PLACE_LOOKUPS = 4;
 
@@ -125,6 +156,46 @@ export const logVisit = implement(logVisitContract, (input) =>
   })
 );
 
+export const editVisit = implement(
+  editVisitContract,
+  ({ date, id, rating, ...unchecked }) =>
+    Effect.gen(function* editVisitInDiary() {
+      const accountId = yield* signedInAccountId;
+      const dateChange = yield* dateChangeOf(date);
+      const ratingChange = yield* ratingChangeOf(rating);
+      const visits = yield* Visits;
+
+      const visit = yield* visits.edit(accountId, id, {
+        ...unchecked,
+        ...dateChange,
+        ...ratingChange,
+      });
+
+      yield* Effect.logInfo("visit.edited").pipe(
+        Effect.annotateLogs({ visitId: visit.id })
+      );
+
+      const place = yield* placeOf(visit.restaurant.placeId);
+
+      return { next: [readDiaryAction], visit: { ...visit, place } };
+    })
+);
+
+export const deleteVisit = implement(deleteVisitContract, ({ id }) =>
+  Effect.gen(function* deleteVisitFromDiary() {
+    const accountId = yield* signedInAccountId;
+    const visits = yield* Visits;
+
+    yield* visits.remove(accountId, id);
+
+    yield* Effect.logInfo("visit.deleted").pipe(
+      Effect.annotateLogs({ visitId: id })
+    );
+
+    return { next: [readDiaryAction, logVisitAction] };
+  })
+);
+
 export const diary = implement(diaryContract, () =>
   Effect.gen(function* readDiary() {
     const accountId = yield* signedInAccountId;
@@ -136,7 +207,7 @@ export const diary = implement(diaryContract, () =>
       .map(({ visit }) => visit);
 
     return {
-      next: [logVisitAction],
+      next: [logVisitAction, editVisitAction, deleteVisitAction],
       visits: yield* withPlaces(visitsNewestFirst),
     };
   })

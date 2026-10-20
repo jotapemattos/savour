@@ -55,10 +55,25 @@ if [[ -z "$place_id" ]]; then
   exit 1
 fi
 
-expect_status "log a visit" 200 \
-  "$(status --request POST "${api}/visits" --header "authorization: Bearer ${token}" \
-    --header 'content-type: application/json' \
-    --data "$(printf '{"placeId":"%s","date":"%s","rating":4}' "$place_id" "$(date -u +%F)")")"
+visit_id="$(curl --silent --max-time 20 --request POST "${api}/visits" \
+  --header "authorization: Bearer ${token}" --header 'content-type: application/json' \
+  --data "$(printf '{"placeId":"%s","date":"%s","rating":4}' "$place_id" "$(date -u +%F)")" |
+  grep -o '"id":"[^"]*"' | head -n 1 | cut -d '"' -f 4)"
+
+if [[ -z "$visit_id" ]]; then
+  echo "FAIL log a visit: no visit id in the answer" >&2
+  exit 1
+fi
+
+echo "ok   log a visit"
+
+expect_status "edit a visit" 200 \
+  "$(status --request PATCH "${api}/visits/${visit_id}" --header "authorization: Bearer ${token}" \
+    --header 'content-type: application/json' --data '{"rating":4.5}')"
+expect_status "delete a visit" 200 \
+  "$(status --request DELETE "${api}/visits/${visit_id}" --header "authorization: Bearer ${token}")"
+expect_status "deleted visit" 404 \
+  "$(status --request DELETE "${api}/visits/${visit_id}" --header "authorization: Bearer ${token}")"
 expect_status "diary" 200 \
   "$(status "${api}/diary" --header "authorization: Bearer ${token}")"
 expect_status "duplicate handle" 409 \

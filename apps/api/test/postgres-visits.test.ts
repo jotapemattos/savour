@@ -1,5 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Rating, Restaurants, VisitDate, Visits } from "@savour/core";
+import {
+  Rating,
+  Restaurants,
+  VisitDate,
+  VisitNotFound,
+  Visits,
+} from "@savour/core";
 import type { NewVisit } from "@savour/core";
 import { Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
@@ -93,6 +99,81 @@ describe("Postgres visits store on Drizzle", () => {
       );
 
       expect(insert).toBe("refused");
+    }).pipe(Effect.provide(VisitsOnPglite))
+  );
+
+  it.effect("edits only the fields it is given", () =>
+    Effect.gen(function* editsVisit() {
+      const logged = yield* logOn("2026-10-01", 3);
+
+      const edited = yield* Visits.use((store) =>
+        store.edit("account-ana", logged.id, {
+          date: day("2026-10-02"),
+          rating: rated(4.5),
+        })
+      );
+
+      expect(edited).toStrictEqual({
+        ...logged,
+        date: "2026-10-02",
+        rating: 4.5,
+      });
+      expect(
+        (yield* Visits.use((store) => store.diary("account-ana"))).map(
+          ({ visit }) => visit
+        )
+      ).toStrictEqual([edited]);
+    }).pipe(Effect.provide(VisitsOnPglite))
+  );
+
+  it.effect("answers an edit with no changes with the visit as it is", () =>
+    Effect.gen(function* editsNothing() {
+      const logged = yield* logOn("2026-10-01", 3);
+
+      expect(
+        yield* Visits.use((store) => store.edit("account-ana", logged.id, {}))
+      ).toStrictEqual(logged);
+    }).pipe(Effect.provide(VisitsOnPglite))
+  );
+
+  it.effect("deletes a visit for good", () =>
+    Effect.gen(function* deletesVisit() {
+      const logged = yield* logOn("2026-10-01", 3);
+
+      yield* Visits.use((store) => store.remove("account-ana", logged.id));
+
+      expect(
+        yield* Visits.use((store) => store.diary("account-ana"))
+      ).toStrictEqual([]);
+    }).pipe(Effect.provide(VisitsOnPglite))
+  );
+
+  it.effect("never edits or deletes another account's visit", () =>
+    Effect.gen(function* refusesStranger() {
+      const logged = yield* logOn("2026-10-01", 3);
+
+      const refusals = yield* Effect.all([
+        Visits.use((store) =>
+          store.edit("account-bia", logged.id, { rating: rated(5) })
+        ).pipe(Effect.flip),
+        Visits.use((store) => store.remove("account-bia", logged.id)).pipe(
+          Effect.flip
+        ),
+        Visits.use((store) => store.remove("account-ana", "not-a-uuid")).pipe(
+          Effect.flip
+        ),
+      ]);
+
+      expect(refusals).toStrictEqual([
+        new VisitNotFound({ visitId: logged.id }),
+        new VisitNotFound({ visitId: logged.id }),
+        new VisitNotFound({ visitId: "not-a-uuid" }),
+      ]);
+      expect(
+        (yield* Visits.use((store) => store.diary("account-ana"))).map(
+          ({ visit }) => visit
+        )
+      ).toStrictEqual([logged]);
     }).pipe(Effect.provide(VisitsOnPglite))
   );
 });
