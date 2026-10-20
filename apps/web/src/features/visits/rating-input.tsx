@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { KeyboardEvent, MouseEvent } from "react";
+
+import { Button } from "#/components/ui/button";
 
 import { StarRow, starsLabel } from "./stars";
 
@@ -27,10 +29,15 @@ const keySteps = new Map([
 ]);
 
 export const RatingInput = (props: {
+  readonly defaultValue?: number | null;
   readonly error?: string | undefined;
   readonly name: string;
 }) => {
-  const [rating, setRating] = useState<number | null>(null);
+  const [rating, setRating] = useState<number | null>(
+    props.defaultValue ?? null
+  );
+
+  const slider = useRef<HTMLDivElement>(null);
 
   const step = (event: KeyboardEvent<HTMLDivElement>) => {
     const move = keySteps.get(event.key);
@@ -57,9 +64,23 @@ export const RatingInput = (props: {
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm leading-none font-medium" id="rating-label">
-        Rating
-      </span>
+      <div className="flex min-h-10 items-center justify-between gap-3">
+        <span className="text-sm leading-none font-medium" id="rating-label">
+          Rating
+        </span>
+        {rating === null ? null : (
+          <Button
+            onClick={() => {
+              setRating(null);
+              slider.current?.focus();
+            }}
+            type="button"
+            variant="quiet"
+          >
+            Clear rating
+          </Button>
+        )}
+      </div>
       <div
         aria-describedby={
           props.error === undefined ? undefined : "rating-error"
@@ -73,6 +94,7 @@ export const RatingInput = (props: {
         className="focus-visible:outline-primary relative w-fit touch-manipulation rounded-lg select-none focus-visible:outline-2 focus-visible:outline-offset-2"
         onClick={tap}
         onKeyDown={step}
+        ref={slider}
         role="slider"
         tabIndex={0}
       >
