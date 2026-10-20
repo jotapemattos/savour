@@ -70,6 +70,8 @@ echo "ok   log a visit"
 expect_status "edit a visit" 200 \
   "$(status --request PATCH "${api}/visits/${visit_id}" --header "authorization: Bearer ${token}" \
     --header 'content-type: application/json' --data '{"rating":4.5}')"
+expect_status "search the diary" 200 \
+  "$(status --get "${api}/diary" --data-urlencode "q=pizza" --header "authorization: Bearer ${token}")"
 expect_status "delete a visit" 200 \
   "$(status --request DELETE "${api}/visits/${visit_id}" --header "authorization: Bearer ${token}")"
 expect_status "deleted visit" 404 \
