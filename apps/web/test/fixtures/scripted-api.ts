@@ -10,10 +10,25 @@ export interface ScriptedReply {
   readonly status: number;
 }
 
+const missing: ScriptedReply = { body: {}, status: 404 };
+
 const healthy: ScriptedReply = {
   body: { next: [], service: "savour-api", status: "ok" },
   status: 200,
 };
+
+export type ScriptedReplies = ScriptedReply | readonly ScriptedReply[];
+
+const isSequence = (
+  replies: ScriptedReplies
+): replies is readonly ScriptedReply[] => Array.isArray(replies);
+
+const queueOf = (replies: ScriptedReplies) =>
+  isSequence(replies) ? [...replies] : [replies];
+
+const nextReply = (queue: ScriptedReply[] | undefined) =>
+  (queue !== undefined && queue.length > 1 ? queue.shift() : queue?.[0]) ??
+  missing;
 
 export const refusedWith = <A>(
   error: Schema.Codec<A, unknown>,
@@ -25,8 +40,6 @@ export const refusedWith = <A>(
 });
 
 const signedOut = refusedWith(Unauthenticated, new Unauthenticated(), 401);
-
-const missing: ScriptedReply = { body: {}, status: 404 };
 
 const decodeJsonBody = Schema.decodeUnknownSync(
   Schema.fromJsonString(Schema.Unknown)
@@ -42,7 +55,7 @@ export const signedInAs = (handle: string): ScriptedReply => ({
 });
 
 export const scriptedApi = (
-  script: Readonly<Record<string, ScriptedReply>>,
+  script: Readonly<Record<string, ScriptedReplies>>,
   requests: string[] = [],
   payloads: unknown[] = [],
   urls: URL[] = []
@@ -52,7 +65,7 @@ export const scriptedApi = (
       "GET /api/account": signedOut,
       "GET /api/health": healthy,
       ...script,
-    })
+    }).map(([route, scripted]) => [route, queueOf(scripted)])
   );
 
   return {
@@ -62,7 +75,7 @@ export const scriptedApi = (
       HttpClient.make((request, url) =>
         Effect.sync(() => {
           const route = `${request.method} ${url.pathname}`;
-          const reply = replies.get(route) ?? missing;
+          const reply = nextReply(replies.get(route));
           requests.push(route);
           urls.push(url);
 

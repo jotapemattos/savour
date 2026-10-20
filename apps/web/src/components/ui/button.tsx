@@ -3,6 +3,8 @@ import type { ComponentProps } from "react";
 import { cn } from "#/lib/utils";
 
 const variants = {
+  destructive:
+    "bg-destructive text-background h-11 w-full px-4 font-medium active:opacity-90",
   primary:
     "bg-primary text-primary-foreground h-11 w-full px-4 font-medium active:opacity-90",
   quiet:

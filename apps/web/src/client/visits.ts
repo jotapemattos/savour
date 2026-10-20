@@ -1,8 +1,10 @@
 import { DiaryEntry } from "@savour/core/contracts";
 import type {
+  EditVisitInput,
   InvalidRating,
   InvalidVisitDate,
   LogVisitInput,
+  VisitNotFound,
 } from "@savour/core/contracts";
 import { queryOptions } from "@tanstack/react-query";
 import { Effect, Schema } from "effect";
@@ -20,12 +22,28 @@ export const VisitLogged = Schema.TaggedStruct("VisitLogged", {
   visit: DiaryEntry,
 });
 
+export const VisitEdited = Schema.TaggedStruct("VisitEdited", {
+  visit: DiaryEntry,
+});
+
+export const VisitRemoved = Schema.TaggedStruct("VisitRemoved", {});
+
 export type DiaryOutcome = typeof DiaryRead.Type | typeof DiarySignedOut.Type;
 
 export type LogOutcome =
   | typeof VisitLogged.Type
   | InvalidRating
   | InvalidVisitDate;
+
+export type EditOutcome =
+  | typeof VisitEdited.Type
+  | VisitNotFound
+  | InvalidRating
+  | InvalidVisitDate;
+
+export type DeleteOutcome = typeof VisitRemoved.Type | VisitNotFound;
+
+export type VisitChanges = Omit<typeof EditVisitInput.Type, "id">;
 
 const readDiary = (transport: ApiTransport) =>
   savourApi(transport).pipe(
@@ -62,5 +80,37 @@ export const logVisit = (
       InvalidRating: (refusal) => Effect.succeed<LogOutcome>(refusal),
       InvalidVisitDate: (refusal) => Effect.succeed<LogOutcome>(refusal),
     }),
+    Effect.provide(transport.layer)
+  );
+
+export const editVisit = (
+  transport: ApiTransport,
+  id: string,
+  changes: VisitChanges
+) =>
+  savourApi(transport).pipe(
+    Effect.flatMap((client) =>
+      client.capabilities.editVisit({ params: { id }, payload: changes })
+    ),
+    Effect.map((edited): EditOutcome =>
+      VisitEdited.make({ visit: edited.visit })
+    ),
+    Effect.catchTags({
+      InvalidRating: (refusal) => Effect.succeed<EditOutcome>(refusal),
+      InvalidVisitDate: (refusal) => Effect.succeed<EditOutcome>(refusal),
+      VisitNotFound: (refusal) => Effect.succeed<EditOutcome>(refusal),
+    }),
+    Effect.provide(transport.layer)
+  );
+
+export const deleteVisit = (transport: ApiTransport, id: string) =>
+  savourApi(transport).pipe(
+    Effect.flatMap((client) =>
+      client.capabilities.deleteVisit({ params: { id }, query: {} })
+    ),
+    Effect.map((): DeleteOutcome => VisitRemoved.make({})),
+    Effect.catchTag("VisitNotFound", (refusal) =>
+      Effect.succeed<DeleteOutcome>(refusal)
+    ),
     Effect.provide(transport.layer)
   );

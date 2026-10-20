@@ -93,7 +93,7 @@ const SearchScreen = () => {
             onClose={() => {
               setLogging(null);
             }}
-            onLogged={() => {
+            onDone={() => {
               void navigate({ to: "/diary" });
             }}
             place={logging}

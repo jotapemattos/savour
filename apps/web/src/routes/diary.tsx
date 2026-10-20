@@ -1,31 +1,56 @@
+import type { DiaryEntry } from "@savour/core/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, useRouteContext } from "@tanstack/react-router";
+import { AnimatePresence, MotionConfig } from "motion/react";
+import { useRef, useState } from "react";
 
 import { diaryQuery } from "#/client/visits";
 import { DiaryOutcome } from "#/features/visits/diary-outcome";
+import { LogSheet } from "#/features/visits/log-sheet";
 
 const DiaryScreen = () => {
   const { api } = useRouteContext({ from: "/diary" });
   const diary = useQuery(diaryQuery(api));
+  const [editing, setEditing] = useState<typeof DiaryEntry.Type | null>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+
+  const close = () => {
+    setEditing(null);
+  };
 
   return (
-    <section aria-labelledby="diary-title" className="flex flex-col gap-6">
-      <div className="flex min-w-0 items-center justify-between gap-3">
-        <h2
-          className="text-2xl font-semibold tracking-tight text-balance"
-          id="diary-title"
-        >
-          Your diary
-        </h2>
-        <Link
-          className="text-muted-foreground hover:text-foreground focus-visible:outline-primary active:bg-muted -mx-2 inline-flex h-10 shrink-0 items-center rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2"
-          to="/search"
-        >
-          Log a visit
-        </Link>
-      </div>
-      <DiaryOutcome diary={diary} />
-    </section>
+    <MotionConfig reducedMotion="user">
+      <section aria-labelledby="diary-title" className="flex flex-col gap-6">
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <h2
+            className="text-2xl font-semibold tracking-tight text-balance"
+            id="diary-title"
+            ref={heading}
+            tabIndex={-1}
+          >
+            Your diary
+          </h2>
+          <Link
+            className="text-muted-foreground hover:text-foreground focus-visible:outline-primary active:bg-muted -mx-2 inline-flex h-10 shrink-0 items-center rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2"
+            to="/search"
+          >
+            Log a visit
+          </Link>
+        </div>
+        <DiaryOutcome diary={diary} onEdit={setEditing} />
+      </section>
+      <AnimatePresence>
+        {editing === null ? null : (
+          <LogSheet
+            focusAfterDelete={heading}
+            key={editing.id}
+            onClose={close}
+            onDone={close}
+            visit={editing}
+          />
+        )}
+      </AnimatePresence>
+    </MotionConfig>
   );
 };
 
