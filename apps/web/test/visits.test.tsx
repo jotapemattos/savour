@@ -286,6 +286,20 @@ describe("log sheet and diary", () => {
     ).toBe("5");
   });
 
+  it("starts from a given rating and clears it", () => {
+    render(<RatingInput defaultValue={3} name="rating" />);
+    const rating = screen.getByRole("slider", { name: "Rating" });
+
+    expect(rating.getAttribute("aria-valuetext")).toBe("3 stars");
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear rating" }));
+
+    expect(rating.getAttribute("aria-valuetext")).toBe("No rating");
+    expect(document.activeElement).toBe(rating);
+    expect(document.querySelector('input[name="rating"]')).toBeNull();
+    expect(screen.queryByRole("button", { name: "Clear rating" })).toBeNull();
+  });
+
   it.live("lists visits as the API orders them, with their stars", () =>
     Effect.gen(function* listsVisits() {
       openAt("/diary", {
