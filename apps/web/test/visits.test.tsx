@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "@effect/vitest";
-import { InvalidVisitDate, Unauthenticated } from "@savour/core";
+import { InvalidVisitDate, Unauthenticated, VisitNotFound } from "@savour/core";
 import { RouterProvider } from "@tanstack/react-router";
 import {
   cleanup,
@@ -17,7 +17,7 @@ import {
   refusedWith,
   scriptedApi,
 } from "./fixtures/scripted-api";
-import type { ScriptedReply } from "./fixtures/scripted-api";
+import type { ScriptedReplies, ScriptedReply } from "./fixtures/scripted-api";
 
 afterEach(cleanup);
 
@@ -26,6 +26,10 @@ const DIARY = "GET /api/diary";
 const SEARCH = "GET /api/restaurants/search";
 
 const LOG = "POST /api/visits";
+
+const EDIT = "PATCH /api/visits/v1";
+
+const DELETE = "DELETE /api/visits/v1";
 
 const today = DateTime.formatIsoDate(
   DateTime.setZone(DateTime.nowUnsafe(), DateTime.zoneMakeLocal())
@@ -50,6 +54,7 @@ const entry = (
     readonly date: string;
     readonly rating: number | null;
     readonly review?: string;
+    readonly tags?: readonly string[];
   }
 ) => ({
   date: fields.date,
@@ -65,7 +70,7 @@ const entry = (
   },
   review: fields.review ?? null,
   revisit: false,
-  tags: [],
+  tags: fields.tags ?? [],
 });
 
 const diaryOf = (
@@ -82,7 +87,7 @@ const loggedAs = (visit: ReturnType<typeof entry>): ScriptedReply => ({
 
 const openAt = (
   path: string,
-  script: Readonly<Record<string, ScriptedReply>>
+  script: Readonly<Record<string, ScriptedReplies>>
 ) => {
   window.history.replaceState(null, "", path);
   const api = scriptedApi(script);
@@ -336,6 +341,264 @@ describe("log sheet and diary", () => {
 
       yield* appeared(() => {
         expect(window.location.pathname).toBe("/sign-in");
+      });
+    })
+  );
+});
+
+const pizzaNight = entry("v1", {
+  date: "2026-10-01",
+  rating: 3,
+  review: "Great crust",
+  tags: ["pizza"],
+});
+
+const openEditSheet = (
+  script: Readonly<Record<string, ScriptedReplies>>,
+  requests: string[] = [],
+  payloads: unknown[] = []
+) =>
+  Effect.gen(function* opensEditSheet() {
+    window.history.replaceState(null, "", "/diary");
+    const api = scriptedApi(script, requests, payloads);
+
+    render(
+      <RouterProvider router={createSavourRouter(api, memorySession(api))} />
+    );
+
+    const entryButton = yield* appeared(() =>
+      screen.getByRole("button", { name: /Pizzaria Bella Napoli/u })
+    );
+
+    fireEvent.click(entryButton);
+
+    return yield* appeared(() =>
+      screen.getByRole("dialog", { name: "Edit visit" })
+    );
+  });
+
+const saveChanges = (sheet: HTMLElement) => {
+  fireEvent.click(within(sheet).getByRole("button", { name: "Save changes" }));
+};
+
+const reviewOf = (sheet: HTMLElement) =>
+  within(sheet).getByLabelText<HTMLTextAreaElement>("Review (optional)");
+
+const closed = () => {
+  expect(screen.queryByRole("dialog")).toBeNull();
+};
+
+describe("editing and deleting from the diary", () => {
+  it.live("edits a visit's rating from the diary at phone width", () =>
+    Effect.gen(function* editsRating() {
+      const payloads: unknown[] = [];
+      const edited = { ...pizzaNight, rating: 4.5 };
+
+      const sheet = yield* openEditSheet(
+        {
+          [DIARY]: [diaryOf([pizzaNight]), diaryOf([edited])],
+          [EDIT]: loggedAs(edited),
+        },
+        [],
+        payloads
+      );
+
+      const rating = within(sheet).getByRole("slider", { name: "Rating" });
+
+      expect(window.innerWidth).toBe(375);
+      expect(within(sheet).getByLabelText<HTMLInputElement>("Date").value).toBe(
+        "2026-10-01"
+      );
+      expect(rating.getAttribute("aria-valuetext")).toBe("3 stars");
+      expect(reviewOf(sheet).value).toBe("Great crust");
+      expect(
+        within(sheet).getByLabelText<HTMLInputElement>("Tags (optional)").value
+      ).toBe("pizza");
+
+      fireEvent.keyDown(rating, { key: "ArrowRight" });
+      fireEvent.keyDown(rating, { key: "ArrowRight" });
+      fireEvent.keyDown(rating, { key: "ArrowRight" });
+      saveChanges(sheet);
+
+      yield* appeared(closed);
+
+      const updated = yield* appeared(() =>
+        within(screen.getByRole("listitem")).getByRole("img", {
+          name: "4.5 stars",
+        })
+      );
+
+      expect(updated).toBeDefined();
+      expect(payloads).toStrictEqual([{ rating: 4.5 }]);
+    })
+  );
+
+  it.live("clears the review and the rating", () =>
+    Effect.gen(function* clearsReviewAndRating() {
+      const payloads: unknown[] = [];
+      const cleared = { ...pizzaNight, rating: null, review: null };
+
+      const sheet = yield* openEditSheet(
+        {
+          [DIARY]: [diaryOf([pizzaNight]), diaryOf([cleared])],
+          [EDIT]: loggedAs(cleared),
+        },
+        [],
+        payloads
+      );
+
+      fireEvent.change(reviewOf(sheet), { target: { value: "" } });
+      fireEvent.click(
+        within(sheet).getByRole("button", { name: "Clear rating" })
+      );
+      saveChanges(sheet);
+
+      yield* appeared(closed);
+
+      const item = yield* appeared(() => {
+        const found = screen.getByRole("listitem");
+        expect(found.textContent).not.toContain("Great crust");
+
+        return found;
+      });
+
+      expect(within(item).queryByRole("img")).toBeNull();
+      expect(payloads).toStrictEqual([{ rating: null, review: null }]);
+    })
+  );
+
+  it.live("closes an unchanged edit without sending it", () =>
+    Effect.gen(function* closesUnchanged() {
+      const requests: string[] = [];
+
+      const sheet = yield* openEditSheet(
+        { [DIARY]: diaryOf([pizzaNight]) },
+        requests
+      );
+
+      saveChanges(sheet);
+
+      yield* appeared(closed);
+      expect(requests).not.toContain(EDIT);
+    })
+  );
+
+  it.live("deletes only after a confirmation step", () =>
+    Effect.gen(function* deletesAfterConfirming() {
+      const requests: string[] = [];
+
+      const sheet = yield* openEditSheet(
+        {
+          [DELETE]: { body: { next: [] }, status: 200 },
+          [DIARY]: [diaryOf([pizzaNight]), diaryOf([])],
+        },
+        requests
+      );
+
+      const deleteVisit = () =>
+        within(sheet).getByRole("button", { name: "Delete visit" });
+
+      fireEvent.click(deleteVisit());
+
+      const confirmation = within(sheet).getByRole("group", {
+        name: "Delete this visit?",
+      });
+
+      expect(requests).not.toContain(DELETE);
+      expect(confirmation.textContent).toContain("Pizzaria Bella Napoli");
+      expect(confirmation.textContent).toContain("Oct 1, 2026");
+      expect(confirmation.textContent).toContain("can’t be undone");
+
+      fireEvent.click(
+        within(confirmation).getByRole("button", { name: "Keep it" })
+      );
+
+      expect(within(sheet).queryByRole("group")).toBeNull();
+      expect(requests).not.toContain(DELETE);
+
+      fireEvent.click(deleteVisit());
+      fireEvent.click(
+        within(
+          within(sheet).getByRole("group", { name: "Delete this visit?" })
+        ).getByRole("button", { name: "Delete visit" })
+      );
+
+      yield* appeared(closed);
+      yield* appeared(() => screen.getByText("No visits yet"));
+
+      yield* appeared(() => {
+        expect(document.activeElement).toBe(
+          screen.getByRole("heading", { name: "Your diary" })
+        );
+      });
+      expect(requests.filter((request) => request === DELETE)).toHaveLength(1);
+    })
+  );
+
+  it.live("keeps the typed failure and the input on a refused edit", () =>
+    Effect.gen(function* keepsInputOnRefusal() {
+      const sheet = yield* openEditSheet({
+        [DIARY]: diaryOf([pizzaNight]),
+        [EDIT]: refusedWith(
+          InvalidVisitDate,
+          new InvalidVisitDate({ date: "2026-10-01", reason: "in-the-future" }),
+          400
+        ),
+      });
+
+      fireEvent.change(reviewOf(sheet), { target: { value: "Thin crust" } });
+      saveChanges(sheet);
+
+      const error = yield* appeared(() =>
+        within(sheet).getByText("Pick today or an earlier day.")
+      );
+
+      expect(
+        within(sheet).getByLabelText("Date").getAttribute("aria-describedby")
+      ).toBe(error.id);
+      expect(reviewOf(sheet).value).toBe("Thin crust");
+    })
+  );
+
+  it.live("explains a visit that is gone", () =>
+    Effect.gen(function* explainsGoneVisit() {
+      const requests: string[] = [];
+
+      const gone = refusedWith(
+        VisitNotFound,
+        new VisitNotFound({ visitId: "v1" }),
+        404
+      );
+
+      const sheet = yield* openEditSheet(
+        { [DELETE]: gone, [DIARY]: diaryOf([pizzaNight]), [EDIT]: gone },
+        requests
+      );
+
+      fireEvent.change(reviewOf(sheet), { target: { value: "Thin crust" } });
+      saveChanges(sheet);
+
+      yield* appeared(() =>
+        within(sheet).getByText("This visit is no longer in your diary.")
+      );
+
+      fireEvent.click(
+        within(sheet).getByRole("button", { name: "Delete visit" })
+      );
+      fireEvent.click(
+        within(
+          within(sheet).getByRole("group", { name: "Delete this visit?" })
+        ).getByRole("button", { name: "Delete visit" })
+      );
+
+      yield* appeared(() => {
+        expect(requests).toContain(DELETE);
+        expect(
+          within(sheet).getByText("This visit is no longer in your diary.")
+        ).toBeDefined();
+        expect(
+          requests.filter((request) => request === DIARY).length
+        ).toBeGreaterThanOrEqual(3);
       });
     })
   );

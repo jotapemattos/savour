@@ -1,3 +1,4 @@
+import type { DiaryEntry } from "@savour/core/contracts";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { Link, Navigate } from "@tanstack/react-router";
 import { Match } from "effect";
@@ -35,6 +36,7 @@ const DiaryUnavailable = (props: { readonly onRetry: () => void }) => (
 
 export const DiaryOutcome = (props: {
   readonly diary: UseQueryResult<Outcome>;
+  readonly onEdit: (visit: typeof DiaryEntry.Type) => void;
 }) => {
   if (props.diary.isError) {
     return (
@@ -60,7 +62,7 @@ export const DiaryOutcome = (props: {
       diary.visits.length === 0 ? (
         <EmptyDiary />
       ) : (
-        <DiaryList visits={diary.visits} />
+        <DiaryList onEdit={props.onEdit} visits={diary.visits} />
       )
     ),
     Match.exhaustive
