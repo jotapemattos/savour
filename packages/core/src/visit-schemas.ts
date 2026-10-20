@@ -54,6 +54,10 @@ export const Diary = Schema.Struct({
   visits: Schema.Array(DiaryEntry),
 });
 
+export const VisitDeleted = Schema.Struct({
+  next: Schema.Array(NextAction),
+});
+
 export interface StoredVisit {
   readonly loggedAt: number;
   readonly visit: typeof Visit.Type;

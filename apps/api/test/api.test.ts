@@ -32,8 +32,19 @@ const decodeDatabaseHealth = Schema.decodeUnknownEffect(DatabaseHealthReport);
 const decodeUnavailable = Schema.decodeUnknownEffect(DatabaseUnavailable);
 
 const decodeOpenApi = Schema.decodeUnknownEffect(
-  Schema.Struct({ paths: Schema.Record(Schema.String, Schema.Unknown) })
+  Schema.Struct({
+    paths: Schema.Record(
+      Schema.String,
+      Schema.Record(Schema.String, Schema.Unknown)
+    ),
+  })
 );
+
+const openApiOperationOf = ({
+  method,
+  path,
+}: (typeof capabilities)[number]["contract"]["http"]) =>
+  `${method.toLowerCase()} ${path.replaceAll(/:(?<name>\w+)/gu, "{$<name>}")}`;
 
 const serveApi = (
   selectOne: Database["Service"]["selectOne"],
@@ -71,8 +82,12 @@ describe("savour api", () => {
       const document = yield* decodeOpenApi(yield* response.json);
 
       expect(response.status).toBe(200);
-      expect(Object.keys(document.paths)).toStrictEqual(
-        capabilities.map((capability) => capability.contract.http.path)
+      expect(
+        Object.entries(document.paths).flatMap(([path, operations]) =>
+          Object.keys(operations).map((method) => `${method} ${path}`)
+        )
+      ).toStrictEqual(
+        capabilities.map(({ contract }) => openApiOperationOf(contract.http))
       );
     }).pipe(Effect.provide(ServedApi))
   );

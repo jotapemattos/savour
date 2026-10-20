@@ -10,11 +10,15 @@ import {
   LoggedVisit,
   SignedIn,
   Unauthenticated,
+  VisitDeleted,
+  VisitNotFound,
+  deleteVisitAction,
+  editVisitAction,
   logVisitAction,
   readDiaryAction,
   Visits,
 } from "@savour/core";
-import type { LogVisitInput } from "@savour/core";
+import type { EditVisitInput, LogVisitInput } from "@savour/core";
 import { Effect, Layer, Option, Schema } from "effect";
 import { HttpBody, HttpClient, HttpRouter } from "effect/http";
 import type { HttpClientResponse } from "effect/http";
@@ -79,18 +83,21 @@ const onToday = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
     Effect.andThen(effect)
   );
 
-const signUpAna = Effect.gen(function* signUpAna() {
-  const response = yield* HttpClient.post("/accounts", {
-    body: HttpBody.jsonUnsafe({
-      email: "ana@example.test",
-      handle: "ana",
-      password: "correct horse 9",
-    }),
+const signUpAs = (handle: string) =>
+  Effect.gen(function* signUp() {
+    const response = yield* HttpClient.post("/accounts", {
+      body: HttpBody.jsonUnsafe({
+        email: `${handle}@example.test`,
+        handle,
+        password: "correct horse 9",
+      }),
+    });
+
+    return (yield* Schema.decodeUnknownEffect(SignedIn)(yield* response.json))
+      .session.token;
   });
 
-  return (yield* Schema.decodeUnknownEffect(SignedIn)(yield* response.json))
-    .session.token;
-});
+const signUpAna = signUpAs("ana");
 
 const logAs = (
   token: string,
@@ -99,6 +106,30 @@ const logAs = (
 ) =>
   HttpClient.post("/visits", {
     body: HttpBody.jsonUnsafe({ placeId: "ChIJbraganca", ...body }),
+    headers: { authorization: `Bearer ${token}` },
+  });
+
+const loggedIdOf = <E, R>(
+  request: Effect.Effect<HttpClientResponse.HttpClientResponse, E, R>
+) =>
+  request.pipe(
+    Effect.flatMap((response) => response.json),
+    Effect.flatMap(Schema.decodeUnknownEffect(LoggedVisit)),
+    Effect.map(({ visit }) => visit.id)
+  );
+
+const editAs = (
+  token: string,
+  visitId: string,
+  body: Omit<typeof EditVisitInput.Encoded, "id">
+) =>
+  HttpClient.patch(`/visits/${visitId}`, {
+    body: HttpBody.jsonUnsafe(body),
+    headers: { authorization: `Bearer ${token}` },
+  });
+
+const deleteAs = (token: string, visitId: string) =>
+  HttpClient.del(`/visits/${visitId}`, {
     headers: { authorization: `Bearer ${token}` },
   });
 
@@ -125,6 +156,14 @@ const decodeInvalidRating = Schema.decodeUnknownEffect(InvalidRating);
 
 const decodeInvalidVisitDate = Schema.decodeUnknownEffect(InvalidVisitDate);
 
+const currentRatingOf = (
+  visits: ReturnType<typeof memoryVisits>,
+  accountId: string
+) =>
+  Visits.use((store) => store.currentRating(accountId, restaurantR.id)).pipe(
+    Effect.provide(visits.layer)
+  );
+
 describe("visit logging", () => {
   it.effect("logs a visit and shows it at the top of the diary", () => {
     const visits = memoryVisits();
@@ -142,7 +181,11 @@ describe("visit logging", () => {
       const diary = yield* diaryOf(token);
 
       expect(logged.next).toStrictEqual([readDiaryAction]);
-      expect(diary.next).toStrictEqual([logVisitAction]);
+      expect(diary.next).toStrictEqual([
+        logVisitAction,
+        editVisitAction,
+        deleteVisitAction,
+      ]);
       expect(diary.visits[0]).toMatchObject({
         date: "2026-10-10",
         rating: 4,
@@ -357,6 +400,127 @@ describe("diary with places", () => {
       );
 
       expect(logged.visit.place?.name).toBe("Pizzaria Bella Bragança");
+    }).pipe(onToday, Effect.provide(serveWith(memoryVisits())))
+  );
+});
+
+describe("diary edits and search", () => {
+  it.effect("edits a visit's rating and date", () => {
+    const visits = memoryVisits();
+
+    return Effect.gen(function* editsVisit() {
+      const token = yield* signUpAna;
+
+      const visitId = yield* loggedIdOf(
+        logAs(token, { date: "2026-10-01", rating: 3 })
+      );
+
+      const response = yield* editAs(token, visitId, {
+        date: "2026-10-02",
+        rating: 4.5,
+      });
+
+      expect(response.status).toBe(200);
+
+      const diary = yield* diaryOf(token);
+      const accountId = visits.stored[0]?.accountId ?? "missing";
+
+      expect(
+        diary.visits.map(({ date, id, rating }) => ({ date, id, rating }))
+      ).toStrictEqual([{ date: "2026-10-02", id: visitId, rating: 4.5 }]);
+      expect(yield* currentRatingOf(visits, accountId)).toStrictEqual(
+        Option.some(4.5)
+      );
+    }).pipe(onToday, Effect.provide(serveWith(visits)));
+  });
+
+  it.effect("keeps the date-only and half-star rules on edit", () =>
+    Effect.gen(function* checksEdits() {
+      const token = yield* signUpAna;
+      const visitId = yield* loggedIdOf(logAs(token, { date: "2026-10-01" }));
+
+      const badRating = yield* refusalOf(
+        editAs(token, visitId, { rating: 4.25 })
+      ).pipe(Effect.flatMap(decodeInvalidRating));
+
+      const futureDay = yield* refusalOf(
+        editAs(token, visitId, { date: "2026-10-20" })
+      ).pipe(Effect.flatMap(decodeInvalidVisitDate));
+
+      expect(badRating).toStrictEqual(new InvalidRating({ rating: 4.25 }));
+      expect(futureDay).toStrictEqual(
+        new InvalidVisitDate({ date: "2026-10-20", reason: "in-the-future" })
+      );
+    }).pipe(onToday, Effect.provide(serveWith(memoryVisits())))
+  );
+
+  it.effect("clears a rating with null", () =>
+    Effect.gen(function* clearsRating() {
+      const token = yield* signUpAna;
+
+      const visitId = yield* loggedIdOf(
+        logAs(token, { date: "2026-10-01", rating: 3 })
+      );
+
+      yield* editAs(token, visitId, { rating: null });
+
+      expect((yield* diaryOf(token)).visits[0]?.rating).toBeNull();
+    }).pipe(onToday, Effect.provide(serveWith(memoryVisits())))
+  );
+
+  it.effect("deletes a visit and recomputes the current rating", () => {
+    const visits = memoryVisits();
+
+    return Effect.gen(function* deletesVisit() {
+      const token = yield* signUpAna;
+
+      yield* logAs(token, { date: "2026-10-01", rating: 3.5 });
+
+      const latest = yield* loggedIdOf(
+        logAs(token, { date: "2026-10-09", rating: 4.5 })
+      );
+
+      const accountId = visits.stored[0]?.accountId ?? "missing";
+
+      const response = yield* deleteAs(token, latest);
+
+      expect(response.status).toBe(200);
+      expect(
+        yield* Schema.decodeUnknownEffect(VisitDeleted)(yield* response.json)
+      ).toStrictEqual({ next: [readDiaryAction, logVisitAction] });
+      expect((yield* diaryOf(token)).visits).toHaveLength(1);
+      expect(yield* currentRatingOf(visits, accountId)).toStrictEqual(
+        Option.some(3.5)
+      );
+    }).pipe(onToday, Effect.provide(serveWith(visits)));
+  });
+
+  it.effect("refuses to edit or delete someone else's visit", () =>
+    Effect.gen(function* refusesStranger() {
+      const ana = yield* signUpAna;
+
+      const visitId = yield* loggedIdOf(
+        logAs(ana, { date: "2026-10-01", rating: 3 })
+      );
+
+      const bea = yield* signUpAs("bea");
+
+      for (const request of [
+        editAs(bea, visitId, { rating: 5 }),
+        deleteAs(bea, visitId),
+        editAs(bea, "visit-404", { rating: 5 }),
+      ]) {
+        const response = yield* request;
+
+        expect(response.status).toBe(404);
+        expect(
+          yield* Schema.decodeUnknownEffect(VisitNotFound)(yield* response.json)
+        ).toBeInstanceOf(VisitNotFound);
+      }
+
+      expect(
+        (yield* diaryOf(ana)).visits.map(({ id, rating }) => ({ id, rating }))
+      ).toStrictEqual([{ id: visitId, rating: 3 }]);
     }).pipe(onToday, Effect.provide(serveWith(memoryVisits())))
   );
 });

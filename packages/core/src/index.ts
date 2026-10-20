@@ -7,7 +7,12 @@ import {
 import { databaseHealth } from "./database-health-capabilities.js";
 import { health } from "./health-capabilities.js";
 import { searchRestaurants } from "./restaurant-search-capabilities.js";
-import { diary, logVisit } from "./visit-capabilities.js";
+import {
+  deleteVisit,
+  diary,
+  editVisit,
+  logVisit,
+} from "./visit-capabilities.js";
 
 export {
   Account,
@@ -83,6 +88,7 @@ export {
   Rating,
   Visit,
   VisitDate,
+  VisitDeleted,
   currentRatingFrom,
   diaryOrder,
   type StoredVisit,
@@ -92,11 +98,23 @@ export { InvalidRating } from "./invalid-rating.js";
 
 export { InvalidVisitDate } from "./invalid-visit-date.js";
 
-export { Visits, type NewVisit, type VisitsService } from "./visits.js";
+export { VisitNotFound } from "./visit-not-found.js";
 
-export { LogVisitInput } from "./visit-contracts.js";
+export {
+  Visits,
+  type NewVisit,
+  type VisitChanges,
+  type VisitsService,
+} from "./visits.js";
 
-export { logVisitAction, readDiaryAction } from "./visit-capabilities.js";
+export { EditVisitInput, LogVisitInput } from "./visit-contracts.js";
+
+export {
+  deleteVisitAction,
+  editVisitAction,
+  logVisitAction,
+  readDiaryAction,
+} from "./visit-capabilities.js";
 
 export {
   HealthReport,
@@ -115,5 +133,7 @@ export const capabilities = [
   currentAccount,
   searchRestaurants,
   logVisit,
+  editVisit,
+  deleteVisit,
   diary,
 ] as const;

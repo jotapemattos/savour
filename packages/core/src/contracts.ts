@@ -7,7 +7,12 @@ import {
 import { databaseHealthContract } from "./database-health-contracts.js";
 import { healthContract } from "./health-contracts.js";
 import { searchRestaurantsContract } from "./restaurant-search-contracts.js";
-import { diaryContract, logVisitContract } from "./visit-contracts.js";
+import {
+  deleteVisitContract,
+  diaryContract,
+  editVisitContract,
+  logVisitContract,
+} from "./visit-contracts.js";
 
 export { SignInInput, SignUpInput } from "./account-contracts.js";
 
@@ -29,7 +34,9 @@ export { InvalidRating } from "./invalid-rating.js";
 
 export { InvalidVisitDate } from "./invalid-visit-date.js";
 
-export { LogVisitInput } from "./visit-contracts.js";
+export { VisitNotFound } from "./visit-not-found.js";
+
+export { EditVisitInput, LogVisitInput } from "./visit-contracts.js";
 
 export { Diary, DiaryEntry, Rating } from "./visit-schemas.js";
 
@@ -48,5 +55,7 @@ export const contracts = [
   currentAccountContract,
   searchRestaurantsContract,
   logVisitContract,
+  editVisitContract,
+  deleteVisitContract,
   diaryContract,
 ] as const;
