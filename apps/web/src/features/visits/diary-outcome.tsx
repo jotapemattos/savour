@@ -23,6 +23,23 @@ const EmptyDiary = () => (
   </div>
 );
 
+const NoMatches = (props: {
+  readonly onClear: () => void;
+  readonly q: string;
+}) => (
+  <div className="flex min-w-0 flex-col items-start gap-2">
+    <p className="line-clamp-3 font-medium text-pretty wrap-anywhere">
+      No visits match “{props.q}”
+    </p>
+    <p className="text-muted-foreground text-pretty">
+      Try another tag or dish.
+    </p>
+    <Button onClick={props.onClear} type="button" variant="quiet">
+      Clear search
+    </Button>
+  </div>
+);
+
 const DiaryUnavailable = (props: { readonly onRetry: () => void }) => (
   <div className="flex flex-col items-start gap-2">
     <p className="text-pretty" role="alert">
@@ -36,6 +53,7 @@ const DiaryUnavailable = (props: { readonly onRetry: () => void }) => (
 
 export const DiaryOutcome = (props: {
   readonly diary: UseQueryResult<Outcome>;
+  readonly onClear: () => void;
   readonly onEdit: (visit: typeof DiaryEntry.Type) => void;
 }) => {
   if (props.diary.isError) {
@@ -58,13 +76,17 @@ export const DiaryOutcome = (props: {
 
   return Match.value(props.diary.data).pipe(
     Match.tag("DiarySignedOut", () => <Navigate replace to="/sign-in" />),
-    Match.tag("DiaryRead", (diary) =>
-      diary.visits.length === 0 ? (
+    Match.tag("DiaryRead", (diary) => {
+      if (diary.visits.length > 0) {
+        return <DiaryList onEdit={props.onEdit} visits={diary.visits} />;
+      }
+
+      return diary.q === "" ? (
         <EmptyDiary />
       ) : (
-        <DiaryList onEdit={props.onEdit} visits={diary.visits} />
-      )
-    ),
+        <NoMatches onClear={props.onClear} q={diary.q} />
+      );
+    }),
     Match.exhaustive
   );
 };
