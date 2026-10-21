@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from "@effect/vitest";
-import { InvalidVisitDate, Unauthenticated, VisitNotFound } from "@savour/core";
+import {
+  DatabaseUnavailable,
+  InvalidVisitDate,
+  Unauthenticated,
+  VisitNotFound,
+} from "@savour/core";
 import { RouterProvider } from "@tanstack/react-router";
 import {
   cleanup,
@@ -600,6 +605,152 @@ describe("editing and deleting from the diary", () => {
           requests.filter((request) => request === DIARY).length
         ).toBeGreaterThanOrEqual(3);
       });
+    })
+  );
+});
+
+const dateNight = entry("v2", {
+  date: "2026-10-03",
+  rating: 4,
+  tags: ["Date Night"],
+});
+
+const lunch = entry("v3", { date: "2026-10-02", rating: 3, tags: ["lunch"] });
+
+const openDiarySearch = (
+  path: string,
+  script: Readonly<Record<string, ScriptedReplies>>,
+  urls: URL[]
+) => {
+  window.history.replaceState(null, "", path);
+  const api = scriptedApi(script, [], [], urls);
+
+  render(
+    <RouterProvider router={createSavourRouter(api, memorySession(api))} />
+  );
+};
+
+const searchBox = () =>
+  screen.getByRole<HTMLInputElement>("searchbox", {
+    name: "Search your diary",
+  });
+
+const diaryQueries = (urls: readonly URL[]) =>
+  urls.flatMap((url) =>
+    url.pathname === "/api/diary" ? [url.searchParams.get("q")] : []
+  );
+
+const announced = () =>
+  screen.getAllByRole("status").map((region) => region.textContent);
+
+const urlQuery = () => new URLSearchParams(window.location.search).get("q");
+
+describe("diary search", () => {
+  it.live("shows only the visits that match", () =>
+    Effect.gen(function* showsMatches() {
+      const urls: URL[] = [];
+      openDiarySearch(
+        "/diary",
+        { [DIARY]: [diaryOf([dateNight, lunch]), diaryOf([dateNight])] },
+        urls
+      );
+
+      yield* appeared(() => {
+        expect(screen.getAllByRole("listitem")).toHaveLength(2);
+      });
+
+      fireEvent.change(searchBox(), { target: { value: "date night" } });
+
+      yield* appeared(() => {
+        expect(screen.getAllByRole("listitem")).toHaveLength(1);
+      });
+      expect(diaryQueries(urls)).toStrictEqual([null, "date night"]);
+      expect(urlQuery()).toBe("date night");
+      expect(announced()).toContain("1 visit matches “date night”");
+    })
+  );
+
+  it.live("keeps the search in the URL", () =>
+    Effect.gen(function* keepsSearch() {
+      const urls: URL[] = [];
+      openDiarySearch("/diary?q=ramen", { [DIARY]: diaryOf([lunch]) }, urls);
+
+      yield* appeared(() => {
+        expect(screen.getAllByRole("listitem")).toHaveLength(1);
+      });
+      expect(searchBox().value).toBe("ramen");
+      expect(diaryQueries(urls)).toStrictEqual(["ramen"]);
+    })
+  );
+
+  it.live(
+    "says when nothing matches, without the first-visit empty state",
+    () =>
+      Effect.gen(function* saysNoMatch() {
+        openDiarySearch("/diary?q=sushi", { [DIARY]: diaryOf([]) }, []);
+
+        yield* appeared(() => screen.getByText("No visits match “sushi”"));
+
+        expect(screen.queryByText("No visits yet")).toBeNull();
+        expect(
+          screen.getByRole("button", { name: "Clear search" })
+        ).toBeDefined();
+        expect(announced()).toContain("0 visits match “sushi”");
+      })
+  );
+
+  it.live("restores the whole diary when the search is cleared", () =>
+    Effect.gen(function* restoresDiary() {
+      const urls: URL[] = [];
+      openDiarySearch(
+        "/diary?q=sushi",
+        { [DIARY]: [diaryOf([]), diaryOf([dateNight, lunch])] },
+        urls
+      );
+
+      const clear = yield* appeared(() =>
+        screen.getByRole("button", { name: "Clear search" })
+      );
+
+      fireEvent.click(clear);
+
+      yield* appeared(() => {
+        expect(screen.getAllByRole("listitem")).toHaveLength(2);
+      });
+      expect(diaryQueries(urls)).toStrictEqual(["sushi", null]);
+      expect(urlQuery()).toBeNull();
+      expect(searchBox().value).toBe("");
+      expect(document.activeElement).toBe(searchBox());
+    })
+  );
+
+  it.live("keeps the search box when a search fails", () =>
+    Effect.gen(function* keepsBoxOnFailure() {
+      openDiarySearch(
+        "/diary",
+        {
+          [DIARY]: [
+            diaryOf([dateNight, lunch]),
+            refusedWith(
+              DatabaseUnavailable,
+              new DatabaseUnavailable({ reason: "unreachable" }),
+              503
+            ),
+          ],
+        },
+        []
+      );
+
+      yield* appeared(() => {
+        expect(screen.getAllByRole("listitem")).toHaveLength(2);
+      });
+
+      fireEvent.change(searchBox(), { target: { value: "date" } });
+
+      yield* appeared(() =>
+        screen.getByText("Your diary couldn’t load. Try again in a moment.")
+      );
+      expect(searchBox().value).toBe("date");
     })
   );
 });

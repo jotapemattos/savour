@@ -1,16 +1,72 @@
+import { SearchQuery } from "@savour/core/contracts";
 import type { DiaryEntry } from "@savour/core/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { Link, createFileRoute, useRouteContext } from "@tanstack/react-router";
+import type { UseQueryResult } from "@tanstack/react-query";
+import {
+  Link,
+  createFileRoute,
+  useNavigate,
+  useRouteContext,
+  useSearch,
+} from "@tanstack/react-router";
+import { Option, Schema } from "effect";
 import { AnimatePresence, MotionConfig } from "motion/react";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { diaryQuery } from "#/client/visits";
+import type { DiaryOutcome as Outcome } from "#/client/visits";
 import { DiaryOutcome } from "#/features/visits/diary-outcome";
+import { DiarySearch, useDiarySearch } from "#/features/visits/diary-search";
 import { LogSheet } from "#/features/visits/log-sheet";
 
+const SearchParams = Schema.Struct({ q: Schema.optional(SearchQuery) });
+
+const decodeSearchParams = Schema.decodeUnknownOption(SearchParams);
+
+const searchable = (q: string | undefined, diary: UseQueryResult<Outcome>) =>
+  q !== undefined ||
+  (diary.data?._tag === "DiaryRead" &&
+    (diary.data.q !== "" || diary.data.visits.length > 0));
+
+const matchCount = (diary: UseQueryResult<Outcome>) => {
+  if (diary.data?._tag !== "DiaryRead" || diary.data.q === "") {
+    return "";
+  }
+
+  if (diary.isPlaceholderData) {
+    return "";
+  }
+
+  const count = diary.data.visits.length;
+
+  return `${count} ${count === 1 ? "visit matches" : "visits match"} “${diary.data.q}”`;
+};
+
 const DiaryScreen = () => {
+  const { q } = useSearch({ from: "/diary" });
   const { api } = useRouteContext({ from: "/diary" });
-  const diary = useQuery(diaryQuery(api));
+  const navigate = useNavigate({ from: "/diary" });
+  const diary = useQuery(diaryQuery(api, q));
+  const searchForm = useRef<HTMLFormElement>(null);
+
+  const searchFor = useCallback(
+    (next?: string) => {
+      void navigate({ replace: true, search: { q: next } });
+    },
+    [navigate]
+  );
+
+  const search = useDiarySearch(q, searchFor);
+
+  const clearSearch = () => {
+    search.clear();
+    const box = searchForm.current?.elements.namedItem("q");
+
+    if (box instanceof HTMLInputElement) {
+      box.focus();
+    }
+  };
+
   const [editing, setEditing] = useState<typeof DiaryEntry.Type | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
 
@@ -37,7 +93,18 @@ const DiaryScreen = () => {
             Log a visit
           </Link>
         </div>
-        <DiaryOutcome diary={diary} onEdit={setEditing} />
+        {searchable(q, diary) ? (
+          <DiarySearch
+            draft={search.draft}
+            form={searchForm}
+            onDraft={search.setDraft}
+            onFlush={search.flush}
+          />
+        ) : null}
+        <p className="sr-only" role="status">
+          {matchCount(diary)}
+        </p>
+        <DiaryOutcome diary={diary} onClear={clearSearch} onEdit={setEditing} />
       </section>
       <AnimatePresence>
         {editing === null ? null : (
@@ -57,4 +124,8 @@ const DiaryScreen = () => {
 export const Route = createFileRoute("/diary")({
   component: DiaryScreen,
   head: () => ({ meta: [{ title: "Your diary · Savour" }] }),
+  validateSearch: (
+    search: Readonly<Record<string, string>>
+  ): typeof SearchParams.Type =>
+    Option.getOrElse(decodeSearchParams(search), () => ({ q: undefined })),
 });
