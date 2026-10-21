@@ -11,7 +11,7 @@ import type { ApiTransport } from "#/client/savour-api";
 import {
   VisitEdited,
   deleteVisit,
-  diaryQuery,
+  diaryKey,
   editVisit,
   logVisit,
 } from "#/client/visits";
@@ -155,7 +155,7 @@ const useVisitMutations = (subject: SheetSubject, onDone: () => void) => {
   const { api, queryClient } = useRouteContext({ from: "__root__" });
 
   const refreshDiary = () => {
-    void queryClient.invalidateQueries({ queryKey: diaryQuery(api).queryKey });
+    void queryClient.invalidateQueries({ queryKey: diaryKey });
   };
 
   const save = useMutation({

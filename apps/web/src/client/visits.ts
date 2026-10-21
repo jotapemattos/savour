@@ -6,13 +6,14 @@ import type {
   LogVisitInput,
   VisitNotFound,
 } from "@savour/core/contracts";
-import { queryOptions } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import { Effect, Schema } from "effect";
 
 import { savourApi } from "./savour-api";
 import type { ApiTransport } from "./savour-api";
 
 export const DiaryRead = Schema.TaggedStruct("DiaryRead", {
+  q: Schema.String,
   visits: Schema.Array(DiaryEntry),
 });
 
@@ -45,11 +46,13 @@ export type DeleteOutcome = typeof VisitRemoved.Type | VisitNotFound;
 
 export type VisitChanges = Omit<typeof EditVisitInput.Type, "id">;
 
-const readDiary = (transport: ApiTransport) =>
+const readDiary = (transport: ApiTransport, q: string) =>
   savourApi(transport).pipe(
-    Effect.flatMap((client) => client.capabilities.diary({ query: {} })),
+    Effect.flatMap((client) =>
+      client.capabilities.diary({ query: q === "" ? {} : { q } })
+    ),
     Effect.map((diary): DiaryOutcome =>
-      DiaryRead.make({ visits: diary.visits })
+      DiaryRead.make({ q, visits: diary.visits })
     ),
     Effect.catchTag("Unauthenticated", () =>
       Effect.succeed<DiaryOutcome>(DiarySignedOut.make({}))
@@ -57,11 +60,14 @@ const readDiary = (transport: ApiTransport) =>
     Effect.provide(transport.layer)
   );
 
-export const diaryQuery = (transport: ApiTransport) =>
+export const diaryKey = ["visits", "diary"] as const;
+
+export const diaryQuery = (transport: ApiTransport, q = "") =>
   queryOptions({
+    placeholderData: keepPreviousData,
     // oxlint-disable-next-line typescript/promise-function-async -- TanStack Query runs query functions as native Promises.
-    queryFn: () => Effect.runPromise(readDiary(transport)),
-    queryKey: ["visits", "diary"],
+    queryFn: () => Effect.runPromise(readDiary(transport, q.trim())),
+    queryKey: [...diaryKey, q.trim()],
     retry: false,
   });
 
