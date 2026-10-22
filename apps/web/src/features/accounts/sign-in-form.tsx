@@ -1,5 +1,7 @@
 import { SignInInput } from "@savour/core/contracts";
 
+import { useMessages } from "#/i18n/messages";
+
 import { Field } from "./field";
 import { SessionForm } from "./session-form";
 import {
@@ -18,31 +20,32 @@ const signInWith = decodedWith(
 
 export const SignInForm = () => {
   const signIn = useSessionChange(signInWith);
+  const { t } = useMessages();
 
   return (
     <SessionForm
       alternative={{
-        label: "Create an account",
-        prompt: "New to Savour?",
+        label: t.signIn.alternative,
+        prompt: t.signIn.alternativePrompt,
         to: "/sign-up",
       }}
       failure={
         signIn.isError
-          ? failureMessage(signIn.error)
-          : refusalMessage(signIn.data, "InvalidCredentials")
+          ? failureMessage(t.session, signIn.error)
+          : refusalMessage(t.session, signIn.data, "InvalidCredentials")
       }
       onSubmit={signIn.mutate}
       pending={signIn.isPending}
-      pendingLabel="Signing in…"
+      pendingLabel={t.signIn.pending}
       signedIn={changedTo(signIn.data, "SignedIn")}
-      submitLabel="Sign in"
-      title="Sign in"
+      submitLabel={t.signIn.submit}
+      title={t.signIn.title}
     >
       <Field
         autoComplete="email"
         id="email"
         inputMode="email"
-        label="Email"
+        label={t.signIn.email}
         name="email"
         required
         spellCheck={false}
@@ -51,7 +54,7 @@ export const SignInForm = () => {
       <Field
         autoComplete="current-password"
         id="password"
-        label="Password"
+        label={t.signIn.password}
         name="password"
         required
         type="password"

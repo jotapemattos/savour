@@ -4,6 +4,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { Effect, Schedule } from "effect";
 
+import { en } from "../src/i18n/en";
 import { createSavourRouter } from "../src/savour-router";
 import {
   memorySession,
@@ -128,6 +129,31 @@ describe("sign-up and sign-in screens", () => {
 
       expect(alert.getAttribute("role")).toBe("alert");
       expect(window.location.pathname).toBe("/sign-in");
+    })
+  );
+
+  it.live("renders the sign-in screen from the catalog", () =>
+    Effect.gen(function* rendersSignInCopy() {
+      openAt("/sign-in", {});
+
+      const heading = yield* appeared(() =>
+        screen.getByRole("heading", { level: 2 })
+      );
+
+      yield* appeared(() => {
+        expect(document.title).toBe(en.titles.signIn);
+      });
+
+      expect(heading.textContent).toBe(en.signIn.title);
+      expect(screen.getByLabelText(en.signIn.email)).toBeDefined();
+      expect(screen.getByLabelText(en.signIn.password)).toBeDefined();
+      expect(
+        screen.getByRole("button", { name: en.signIn.submit })
+      ).toBeDefined();
+      expect(
+        screen.getByRole("link", { name: en.signIn.alternative })
+      ).toBeDefined();
+      expect(document.title).toBe("Sign in · Savour");
     })
   );
 });
