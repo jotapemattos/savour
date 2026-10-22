@@ -1,6 +1,7 @@
 import {
   currentAccount,
   signIn,
+  signInWithGoogle,
   signOut,
   signUp,
 } from "./account-capabilities.js";
@@ -18,14 +19,18 @@ export {
   Account,
   AccountReport,
   SessionAccount,
+  GoogleSignInOutcome,
   SignedIn,
   SignedInAccount,
+  SignedInWithGoogle,
   SignedOut,
 } from "./account-schemas.js";
 
 export { signUpContract } from "./account-contracts.js";
 
 export { EmailTaken } from "./email-taken.js";
+
+export { HandleNeeded, handleNeededNextActions } from "./handle-needed.js";
 
 export { HandleTaken } from "./handle-taken.js";
 
@@ -37,6 +42,7 @@ export {
   currentAccount,
   requireSessionToken,
   signIn,
+  signInWithGoogle,
   signOut,
   signUp,
   signedInNextActions,
@@ -129,6 +135,7 @@ export const capabilities = [
   databaseHealth,
   signUp,
   signIn,
+  signInWithGoogle,
   signOut,
   currentAccount,
   searchRestaurants,

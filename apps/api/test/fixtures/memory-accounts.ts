@@ -3,6 +3,7 @@ import { RuntimeContext } from "alchemy";
 import { Effect, Layer } from "effect";
 
 import { betterAuthAccounts } from "../../src/better-auth-accounts.js";
+import { scriptedGoogle } from "./scripted-google.js";
 
 const TestRuntimeContext = Layer.succeed(RuntimeContext, {
   Type: "Test",
@@ -12,8 +13,13 @@ const TestRuntimeContext = Layer.succeed(RuntimeContext, {
   set: (id) => Effect.succeed(id),
 });
 
-export const MemoryAccounts = betterAuthAccounts(
-  "local-test-secret-with-enough-entropy"
-).pipe(Layer.provide(Memory()));
+export const testAccountsOptions = {
+  google: scriptedGoogle,
+  secret: "local-test-secret-with-enough-entropy",
+};
+
+export const MemoryAccounts = betterAuthAccounts(testAccountsOptions).pipe(
+  Layer.provide(Memory())
+);
 
 export const withTestRuntime = Layer.provideMerge(TestRuntimeContext);

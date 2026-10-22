@@ -33,7 +33,9 @@ const makeApiWorker = Effect.gen(function* makeApiWorker() {
     Layer.provide(SQL.PostgresLayer({ url: hyperdrive.connectionString }))
   );
 
-  const accounts = betterAuthAccounts().pipe(
+  const accounts = betterAuthAccounts({
+    google: { clientId: yield* Config.Redacted("GOOGLE_CLIENT_ID") },
+  }).pipe(
     Layer.provide(CloudflareHyperdrive(connection, { migrate: migrationUrl }))
   );
 

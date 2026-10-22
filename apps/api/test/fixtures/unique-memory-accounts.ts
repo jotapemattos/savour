@@ -6,6 +6,7 @@ import { getSchema } from "better-auth/db";
 import { Data, Effect, Layer, Schema } from "effect";
 
 import { betterAuthAccounts } from "../../src/better-auth-accounts.js";
+import { testAccountsOptions } from "./memory-accounts.js";
 
 const UserColumns = Schema.Struct({
   email: Schema.String,
@@ -93,6 +94,6 @@ const uniqueMemory = (before: BeforeUserInsert) => {
 };
 
 export const uniqueMemoryAccounts = (before: BeforeUserInsert) =>
-  betterAuthAccounts("local-test-secret-with-enough-entropy").pipe(
+  betterAuthAccounts(testAccountsOptions).pipe(
     Layer.provide(uniqueMemory(before))
   );

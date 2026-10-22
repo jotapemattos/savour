@@ -4,11 +4,13 @@ import {
   AccountReport,
   Database,
   EmailTaken,
+  HandleNeeded,
   HandleTaken,
   InvalidCredentials,
   SignedIn,
   SignedOut,
   Unauthenticated,
+  handleNeededNextActions,
   signUpContract,
   signedInNextActions,
   signedOutNextActions,
@@ -215,6 +217,176 @@ describe("accounts", () => {
 
       expect(response.status).toBe(401);
     }).pipe(Effect.provide(ServedApi))
+  );
+});
+
+const signInWithGoogle = (body: Record<string, string>) =>
+  postJson("/sessions/google", body);
+
+const googleSignIn = (body: Record<string, string>) =>
+  Effect.gen(function* signInThroughGoogle() {
+    const response = yield* signInWithGoogle(body);
+
+    expect(response.status).toBe(200);
+
+    return yield* decodeSignedIn(yield* response.json);
+  });
+
+const currentHandle = (token: string) =>
+  HttpClient.get("/account", withBearer(token)).pipe(
+    Effect.flatMap((response) => response.json),
+    Effect.flatMap(Schema.decodeUnknownEffect(AccountReport)),
+    Effect.map(({ account }) => account.handle)
+  );
+
+describe("Google sign-in", () => {
+  it.effect("signs in an existing Google account", () =>
+    Effect.gen(function* signsInExistingGoogleAccount() {
+      yield* googleSignIn({ handle: "ana", idToken: "valid-ana" });
+
+      const signedIn = yield* googleSignIn({ idToken: "valid-ana" });
+
+      expect(signedIn.account.handle).toBe("ana");
+      expect(signedIn.session.token).not.toBe("");
+      expect(signedIn.next).toStrictEqual(signedInNextActions);
+    }).pipe(Effect.provide(ServedApi))
+  );
+
+  it.effect("asks for a handle the first time a Google identity arrives", () =>
+    Effect.gen(function* asksForHandle() {
+      const response = yield* signInWithGoogle({ idToken: "valid-new" });
+
+      expect(response.status).toBe(409);
+
+      const needed = yield* Schema.decodeUnknownEffect(HandleNeeded)(
+        yield* response.json
+      );
+
+      expect(needed.field).toBe("handle");
+      expect(needed.next).toStrictEqual(handleNeededNextActions);
+    }).pipe(Effect.provide(ServedApi))
+  );
+
+  it.effect("creates the account when the handle is sent", () =>
+    Effect.gen(function* createsGoogleAccount() {
+      const signedIn = yield* googleSignIn({
+        handle: "bea",
+        idToken: "valid-new",
+      });
+
+      expect(signedIn.account).toStrictEqual({
+        email: "new@example.test",
+        handle: "bea",
+      });
+      expect(yield* currentHandle(signedIn.session.token)).toBe("bea");
+    }).pipe(Effect.provide(ServedApi))
+  );
+
+  it.effect("refuses a taken handle for a new Google identity", () =>
+    Effect.gen(function* refusesTakenHandle() {
+      yield* signUpAna;
+
+      const response = yield* signInWithGoogle({
+        handle: "ana",
+        idToken: "valid-new",
+      });
+
+      expect(response.status).toBe(409);
+      expect(
+        yield* Schema.decodeUnknownEffect(HandleTaken)(yield* response.json)
+      ).toStrictEqual(new HandleTaken({ handle: "ana" }));
+    }).pipe(Effect.provide(ServedApi))
+  );
+
+  it.effect("refuses a token Google did not sign", () =>
+    Effect.gen(function* refusesForgedToken() {
+      const response = yield* signInWithGoogle({
+        handle: "eve",
+        idToken: "forged",
+      });
+
+      const body = yield* response.json;
+
+      expect(response.status).toBe(401);
+      expect(
+        yield* Schema.decodeUnknownEffect(InvalidCredentials)(body)
+      ).toStrictEqual(new InvalidCredentials());
+      expect(JSON.stringify(body)).not.toContain("token");
+
+      const eveSignUp = yield* postJson("/accounts", {
+        email: "eve@example.test",
+        handle: "eve",
+        password: ana.password,
+      });
+
+      expect(eveSignUp.status).toBe(200);
+    }).pipe(Effect.provide(ServedApi))
+  );
+
+  it.effect("links to the email account with the same verified email", () =>
+    Effect.gen(function* linksVerifiedEmail() {
+      yield* signUpAna;
+
+      const linked = yield* googleSignIn({ idToken: "valid-ana" });
+
+      expect(linked.account).toStrictEqual({
+        email: "ana@example.test",
+        handle: "ana",
+      });
+
+      const again = yield* googleSignIn({ idToken: "valid-ana" });
+
+      expect(again.account.handle).toBe("ana");
+
+      const passwordSignIn = yield* postJson("/sessions", {
+        email: ana.email,
+        password: ana.password,
+      });
+
+      expect(passwordSignIn.status).toBe(200);
+    }).pipe(Effect.provide(ServedApi))
+  );
+
+  it.effect("refuses to link an email Google has not verified", () =>
+    Effect.gen(function* refusesUnverifiedEmail() {
+      yield* signUpAna;
+
+      const response = yield* signInWithGoogle({
+        handle: "mallory",
+        idToken: "unverified-ana",
+      });
+
+      expect(response.status).toBe(401);
+      expect(
+        yield* Schema.decodeUnknownEffect(InvalidCredentials)(
+          yield* response.json
+        )
+      ).toStrictEqual(new InvalidCredentials());
+    }).pipe(Effect.provide(ServedApi))
+  );
+
+  it.effect(
+    "answers HandleTaken when the handle was claimed between check and create",
+    () =>
+      Effect.gen(function* answersHandleTakenForGoogle() {
+        const response = yield* signInWithGoogle({
+          handle: "bea",
+          idToken: "valid-new",
+        });
+
+        expect(response.status).toBe(409);
+        expect(
+          yield* Schema.decodeUnknownEffect(HandleTaken)(yield* response.json)
+        ).toStrictEqual(new HandleTaken({ handle: "bea" }));
+      }).pipe(
+        Effect.provide(
+          serveWith(
+            uniqueMemoryAccounts({
+              claimedFirst: { email: "other@example.test", handle: "bea" },
+            })
+          )
+        )
+      )
   );
 });
 

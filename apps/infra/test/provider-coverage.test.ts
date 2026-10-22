@@ -24,11 +24,16 @@ const decodeProjectRetention = Schema.decodeUnknownSync(
   Schema.Struct({ historyRetentionSeconds: Schema.Finite })
 );
 
-const withPlacesKey = (env: Readonly<Record<string, string>>) =>
+const withSecrets = (env: Readonly<Record<string, string>>) =>
   ConfigProvider.layer(ConfigProvider.fromUnknown(env));
 
+const workerSecrets = {
+  GOOGLE_CLIENT_ID: "test-client-id",
+  GOOGLE_PLACES_API_KEY: "test-key",
+};
+
 const services = Layer.mergeAll(
-  withPlacesKey({ GOOGLE_PLACES_API_KEY: "test-key" }),
+  withSecrets(workerSecrets),
   AlchemyContextLive.pipe(Layer.provideMerge(NodeServices.layer)),
   Layer.succeed(Stage, "staging"),
   Layer.succeed(AuthProviders, {}),
@@ -94,17 +99,28 @@ it.effect(
     })
 );
 
-it.effect(
-  "the staging Stack refuses to compile without a Google Places key",
-  () =>
-    Effect.gen(function* refusesWithoutPlacesKey() {
+it.effect.each(Object.keys(workerSecrets))(
+  "the staging Stack refuses to compile without %s",
+  (missing) =>
+    Effect.gen(function* refusesWithoutSecret() {
       const exit = yield* stack.pipe(
-        Effect.provide(Layer.merge(services, withPlacesKey({}))),
+        Effect.provide(
+          Layer.merge(
+            services,
+            withSecrets(
+              Object.fromEntries(
+                Object.entries(workerSecrets).filter(
+                  ([name]) => name !== missing
+                )
+              )
+            )
+          )
+        ),
         Effect.exit
       );
 
       expect(
         Exit.isFailure(exit) ? Cause.pretty(exit.cause) : "compiled"
-      ).toContain("GOOGLE_PLACES_API_KEY");
+      ).toContain(missing);
     })
 );

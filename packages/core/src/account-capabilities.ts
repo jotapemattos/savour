@@ -4,6 +4,7 @@ import { Effect } from "effect";
 import {
   currentAccountContract,
   signInContract,
+  signInWithGoogleContract,
   signOutContract,
   signUpContract,
 } from "./account-contracts.js";
@@ -64,6 +65,36 @@ export const signIn = implement(signInContract, (input) =>
     const signedIn = yield* accounts
       .signIn(input)
       .pipe(Effect.tapError(() => Effect.logInfo("account.sign_in_failed")));
+
+    return { ...signedIn, next: signedInNextActions };
+  })
+);
+
+const refusedGoogleOutcomes = {
+  HandleNeeded: "handle-needed",
+  HandleTaken: "handle-taken",
+  InvalidCredentials: "refused",
+} as const;
+
+export const signInWithGoogle = implement(signInWithGoogleContract, (input) =>
+  Effect.gen(function* signInAccountWithGoogle() {
+    const accounts = yield* Accounts;
+
+    const { outcome, ...signedIn } = yield* accounts
+      .signInWithGoogle(input)
+      .pipe(
+        Effect.tapError((refusal) =>
+          Effect.logInfo("account.google_sign_in").pipe(
+            Effect.annotateLogs({
+              outcome: refusedGoogleOutcomes[refusal._tag],
+            })
+          )
+        )
+      );
+
+    yield* Effect.logInfo("account.google_sign_in").pipe(
+      Effect.annotateLogs({ outcome })
+    );
 
     return { ...signedIn, next: signedInNextActions };
   })
