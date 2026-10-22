@@ -29,7 +29,12 @@ export { LatLng, Place, PriceLevel, SearchQuery } from "./place-schemas.js";
 
 export { PlaceSearchUnavailable } from "./place-search-unavailable.js";
 
-export { RestaurantSearchResults } from "./restaurant-search-contracts.js";
+export {
+  ProviderResult,
+  RestaurantSearchResults,
+  SearchResult,
+  UserAddedResult,
+} from "./restaurant-search-contracts.js";
 
 export { InvalidRating } from "./invalid-rating.js";
 

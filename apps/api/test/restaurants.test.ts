@@ -5,6 +5,7 @@ import {
   Database,
   InvalidRestaurant,
   LoggedVisit,
+  RestaurantSearchResults,
   SignedIn,
   Unauthenticated,
   logVisitToRestaurantAction,
@@ -14,7 +15,10 @@ import { HttpBody, HttpClient, HttpRouter } from "effect/http";
 import { TestClock } from "effect/testing";
 
 import { apiRoutes } from "../src/app.js";
-import { FakePlaceSearch } from "./fixtures/fake-place-search.js";
+import {
+  FakePlaceSearch,
+  pizzariaBraganca,
+} from "./fixtures/fake-place-search.js";
 import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
 import { memoryVisits } from "./fixtures/memory-visits.js";
 
@@ -142,6 +146,32 @@ describe("add a missing restaurant", () => {
       );
 
       expect(logged.visit.restaurant).toStrictEqual(added.restaurant);
+    }).pipe(Effect.provide(served().layer))
+  );
+
+  it.effect("appears in other users' search marked as user-added", () =>
+    Effect.gen(function* findsForOthers() {
+      const added = yield* addedBy(yield* signUpAs("ana"), barDoZe);
+
+      yield* signUpAs("bia");
+
+      const found = yield* HttpClient.get("/restaurants/search", {
+        urlParams: { q: "Bar do Zé" },
+      }).pipe(
+        Effect.flatMap((response) => response.json),
+        Effect.flatMap(Schema.decodeUnknownEffect(RestaurantSearchResults))
+      );
+
+      expect(found.results).toStrictEqual([
+        {
+          addedBy: "ana",
+          address: "Rua X, 10, Bragança Paulista - SP",
+          name: "Bar do Zé",
+          restaurantId: added.restaurant.id,
+          userAdded: true,
+        },
+        { ...pizzariaBraganca, userAdded: false },
+      ]);
     }).pipe(Effect.provide(served().layer))
   );
 

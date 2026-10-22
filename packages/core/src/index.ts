@@ -79,7 +79,10 @@ export {
 } from "./restaurant-capabilities.js";
 
 export {
+  ProviderResult,
   RestaurantSearchResults,
+  SearchResult,
+  UserAddedResult,
   searchRestaurantsContract,
 } from "./restaurant-search-contracts.js";
 

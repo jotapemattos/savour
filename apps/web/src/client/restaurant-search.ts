@@ -1,4 +1,4 @@
-import { Place } from "@savour/core/contracts";
+import { Place, ProviderResult } from "@savour/core/contracts";
 import type { LatLng } from "@savour/core/contracts";
 import { queryOptions, skipToken } from "@tanstack/react-query";
 import { Effect, Schema } from "effect";
@@ -19,6 +19,8 @@ export type SearchOutcome =
 
 const ADD_BY_HAND = "create-form";
 
+const isProviderResult = Schema.is(ProviderResult);
+
 const searchPlaces = (
   transport: ApiTransport,
   q: string,
@@ -33,7 +35,7 @@ const searchPlaces = (
     Effect.map((found): SearchOutcome =>
       PlacesFound.make({
         canAddByHand: found.next.some((action) => action.rel === ADD_BY_HAND),
-        places: found.results,
+        places: found.results.filter(isProviderResult),
       })
     ),
     Effect.catchTag("PlaceSearchUnavailable", () =>

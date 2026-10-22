@@ -143,7 +143,7 @@ describe("savour api", () => {
         )
       ).toStrictEqual({
         next: [addRestaurantAction],
-        results: [pizzariaBraganca],
+        results: [{ ...pizzariaBraganca, userAdded: false }],
       });
     }).pipe(Effect.provide(ServedApi))
   );
