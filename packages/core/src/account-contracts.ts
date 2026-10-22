@@ -10,6 +10,7 @@ import {
   SignedOut,
 } from "./account-schemas.js";
 import { EmailTaken } from "./email-taken.js";
+import { HandleNeeded } from "./handle-needed.js";
 import { HandleTaken } from "./handle-taken.js";
 import { InvalidCredentials } from "./invalid-credentials.js";
 import { Unauthenticated } from "./unauthenticated.js";
@@ -23,6 +24,11 @@ export const SignUpInput = Schema.Struct({
 export const SignInInput = Schema.Struct({
   email: Email,
   password: Schema.NonEmptyString,
+});
+
+export const SignInWithGoogleInput = Schema.Struct({
+  handle: Schema.optional(Handle),
+  idToken: Schema.NonEmptyString,
 });
 
 export const signUpContract = defineContract("signUp", {
@@ -40,6 +46,15 @@ export const signInContract = defineContract("signIn", {
   failure: InvalidCredentials,
   http: { method: "POST", path: "/sessions" },
   input: SignInInput,
+  output: SignedIn,
+});
+
+export const signInWithGoogleContract = defineContract("signInWithGoogle", {
+  description:
+    "Sign in with a Google ID token issued to Savour's Google client. An unknown Google identity fails with `HandleNeeded`; send the same token again with a `handle` to create the account. A verified Google email that matches an existing account signs in to that account. Send the returned session token as `Authorization: Bearer <token>`.",
+  failure: Schema.Union([HandleNeeded, HandleTaken, InvalidCredentials]),
+  http: { method: "POST", path: "/sessions/google" },
+  input: SignInWithGoogleInput,
   output: SignedIn,
 });
 

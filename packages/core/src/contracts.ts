@@ -1,6 +1,7 @@
 import {
   currentAccountContract,
   signInContract,
+  signInWithGoogleContract,
   signOutContract,
   signUpContract,
 } from "./account-contracts.js";
@@ -14,9 +15,15 @@ import {
   logVisitContract,
 } from "./visit-contracts.js";
 
-export { SignInInput, SignUpInput } from "./account-contracts.js";
+export {
+  SignInInput,
+  SignInWithGoogleInput,
+  SignUpInput,
+} from "./account-contracts.js";
 
 export { Account } from "./account-schemas.js";
+
+export { HandleNeeded } from "./handle-needed.js";
 
 export {
   DatabaseHealthReport,
@@ -51,6 +58,7 @@ export const contracts = [
   databaseHealthContract,
   signUpContract,
   signInContract,
+  signInWithGoogleContract,
   signOutContract,
   currentAccountContract,
   searchRestaurantsContract,

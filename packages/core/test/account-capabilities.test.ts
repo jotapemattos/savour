@@ -3,11 +3,13 @@ import { Effect, Exit, Layer, Logger, Option } from "effect";
 
 import {
   Accounts,
+  HandleNeeded,
   InvalidCredentials,
   SessionCredential,
   Unauthenticated,
   currentAccount,
   signIn,
+  signInWithGoogle,
   signUp,
 } from "../src/index.js";
 
@@ -34,6 +36,10 @@ const FakeAccounts = Layer.succeed(Accounts, {
   accountForSession: () =>
     Effect.succeed({ account: ana.account, accountId: "account-ana" }),
   signIn: () => Effect.fail(new InvalidCredentials()),
+  signInWithGoogle: ({ handle }) =>
+    handle === undefined
+      ? Effect.fail(new HandleNeeded())
+      : Effect.succeed({ ...ana, outcome: "created" }),
   signOut: () => Effect.void,
   signUp: () => Effect.succeed(ana),
 });
@@ -82,6 +88,47 @@ describe("account capabilities", () => {
       });
       expect(JSON.stringify(logs.entries)).not.toMatch(/example\.test|wrong/u);
     })
+  );
+
+  it.effect(
+    "logs account.google_sign_in with the outcome and no identity fields",
+    () =>
+      Effect.gen(function* logsGoogleOutcomes() {
+        const logs = capturedLogs();
+        const accounts = Layer.merge(FakeAccounts, logs.layer);
+
+        const created = yield* signInWithGoogle
+          .handler({ handle: "ana", idToken: "google-id-token" })
+          .pipe(Effect.provide(accounts));
+
+        const refused = yield* signInWithGoogle
+          .handler({ idToken: "google-id-token" })
+          .pipe(Effect.provide(accounts), Effect.exit);
+
+        expect(created.account.handle).toBe("ana");
+        expect(refused).toStrictEqual(Exit.fail(new HandleNeeded()));
+        expect(
+          logs.entries.map(({ annotations, level, message }) => ({
+            annotations,
+            level,
+            message,
+          }))
+        ).toStrictEqual([
+          {
+            annotations: { outcome: "created" },
+            level: "INFO",
+            message: "account.google_sign_in",
+          },
+          {
+            annotations: { outcome: "handle-needed" },
+            level: "INFO",
+            message: "account.google_sign_in",
+          },
+        ]);
+        expect(JSON.stringify(logs.entries)).not.toMatch(
+          /example\.test|google-id-token/u
+        );
+      })
   );
 
   it.effect("fails with Unauthenticated when no bearer token was sent", () =>

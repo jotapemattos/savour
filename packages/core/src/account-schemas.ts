@@ -31,6 +31,17 @@ export const SignedInAccount = Schema.Struct({
   session: Schema.Struct({ token: SessionToken }),
 });
 
+export const GoogleSignInOutcome = Schema.Literals([
+  "created",
+  "linked",
+  "signed-in",
+]);
+
+export const SignedInWithGoogle = Schema.Struct({
+  ...SignedInAccount.fields,
+  outcome: GoogleSignInOutcome,
+});
+
 export const SignedIn = Schema.Struct({
   ...SignedInAccount.fields,
   next: Schema.Array(NextAction),
