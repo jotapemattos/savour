@@ -9,6 +9,7 @@ import {
 } from "./account-contracts.js";
 import { Accounts } from "./accounts.js";
 import { SessionCredential } from "./session-credential.js";
+import { SignInThrottle } from "./sign-in-throttle.js";
 import { Unauthenticated } from "./unauthenticated.js";
 
 export const signedInNextActions = [
@@ -57,9 +58,31 @@ export const signUp = implement(signUpContract, (input) =>
   })
 );
 
+const signInThrottleKey = (email: string) =>
+  Effect.promise(
+    // oxlint-disable-next-line typescript/promise-function-async -- Web Crypto digests answer with native Promises.
+    () =>
+      crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(email.toLowerCase())
+      )
+  ).pipe(
+    Effect.map((digest) =>
+      Array.from(new Uint8Array(digest), (byte) =>
+        byte.toString(16).padStart(2, "0")
+      ).join("")
+    )
+  );
+
 export const signIn = implement(signInContract, (input) =>
   Effect.gen(function* signInAccount() {
     const accounts = yield* Accounts;
+    const throttle = yield* SignInThrottle;
+
+    yield* signInThrottleKey(input.email).pipe(
+      Effect.flatMap(throttle.admit),
+      Effect.tapError(() => Effect.logInfo("account.sign_in_throttled"))
+    );
 
     const signedIn = yield* accounts
       .signIn(input)

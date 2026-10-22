@@ -22,6 +22,7 @@ import {
   pizzariaBraganca,
   recordingPlaceSearch,
 } from "./fixtures/fake-place-search.js";
+import { AdmittingSignInThrottle } from "./fixtures/fake-sign-in-throttle.js";
 import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
 import { memoryVisits } from "./fixtures/memory-visits.js";
 
@@ -54,6 +55,7 @@ const serveApi = (
     apiRoutes.pipe(
       Layer.provide(Layer.succeed(Database, { selectOne })),
       Layer.provide(MemoryAccounts),
+      Layer.provide(AdmittingSignInThrottle),
       Layer.provide(places),
       Layer.provide(memoryVisits().layer)
     ),

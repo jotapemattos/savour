@@ -9,6 +9,7 @@ import * as Layer from "effect/Layer";
 
 import { apiRoutes } from "./app.js";
 import { betterAuthAccounts } from "./better-auth-accounts.js";
+import { cloudflareSignInThrottle } from "./cloudflare-sign-in-throttle.js";
 import { DatabaseConnection } from "./database-resources.js";
 import { googlePlaceSearch } from "./google-place-search.js";
 import { PostgresDatabase } from "./postgres-database.js";
@@ -37,6 +38,13 @@ const makeApiWorker = Effect.gen(function* makeApiWorker() {
     Layer.provide(CloudflareHyperdrive(connection, { migrate: migrationUrl }))
   );
 
+  const signInThrottle = cloudflareSignInThrottle(
+    yield* Cloudflare.RateLimit("SIGN_IN_THROTTLE", {
+      namespaceId: 2501,
+      simple: { limit: 5, period: 60 },
+    })
+  );
+
   const placeSearch = googlePlaceSearch(
     yield* Config.Redacted("GOOGLE_PLACES_API_KEY")
   ).pipe(Layer.provide(FetchHttpClient.layer));
@@ -44,11 +52,20 @@ const makeApiWorker = Effect.gen(function* makeApiWorker() {
   return {
     fetch: yield* HttpRouter.toHttpEffect(
       apiRoutes.pipe(
-        Layer.provide(Layer.mergeAll(database, accounts, placeSearch))
+        Layer.provide(
+          Layer.mergeAll(database, accounts, signInThrottle, placeSearch)
+        )
       )
     ).pipe(Effect.orDie),
   };
-}).pipe(Effect.provide(Cloudflare.Hyperdrive.ConnectBinding));
+}).pipe(
+  Effect.provide(
+    Layer.merge(
+      Cloudflare.Hyperdrive.ConnectBinding,
+      Cloudflare.RateLimitBinding
+    )
+  )
+);
 
 export default class Api extends Cloudflare.Worker<Api>()(
   "Api",

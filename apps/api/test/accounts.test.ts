@@ -1,5 +1,6 @@
 import { NodeHttpServer } from "@effect/platform-node";
 import { describe, expect, it } from "@effect/vitest";
+import type { SignInThrottle } from "@savour/core";
 import {
   AccountReport,
   Database,
@@ -8,6 +9,7 @@ import {
   InvalidCredentials,
   SignedIn,
   SignedOut,
+  TooManySignInAttempts,
   Unauthenticated,
   signUpContract,
   signedInNextActions,
@@ -18,6 +20,10 @@ import { HttpBody, HttpClient, HttpRouter } from "effect/http";
 
 import { apiRoutes } from "../src/app.js";
 import { FakePlaceSearch } from "./fixtures/fake-place-search.js";
+import {
+  AdmittingSignInThrottle,
+  RefusingSignInThrottle,
+} from "./fixtures/fake-sign-in-throttle.js";
 import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
 import { memoryVisits } from "./fixtures/memory-visits.js";
 import { uniqueMemoryAccounts } from "./fixtures/unique-memory-accounts.js";
@@ -28,10 +34,14 @@ const ana = {
   password: "correct horse 9",
 };
 
-const serveWith = (accounts: typeof MemoryAccounts) =>
+const serveWith = (
+  accounts: typeof MemoryAccounts,
+  throttle: Layer.Layer<SignInThrottle> = AdmittingSignInThrottle
+) =>
   HttpRouter.serve(
     apiRoutes.pipe(
       Layer.provide(accounts),
+      Layer.provide(throttle),
       Layer.provide(FakePlaceSearch),
       Layer.provide(memoryVisits().layer),
       Layer.provide(
@@ -215,6 +225,45 @@ describe("accounts", () => {
 
       expect(response.status).toBe(401);
     }).pipe(Effect.provide(ServedApi))
+  );
+});
+
+describe("sign-in throttle", () => {
+  it.effect("lets sign-in through while under the limit", () =>
+    Effect.gen(function* letsSignInThrough() {
+      yield* signUpAna;
+
+      const response = yield* postJson("/sessions", {
+        email: ana.email,
+        password: ana.password,
+      });
+
+      expect(response.status).toBe(200);
+      expect(
+        (yield* decodeSignedIn(yield* response.json)).session.token
+      ).not.toBe("");
+    }).pipe(Effect.provide(ServedApi))
+  );
+
+  it.effect(
+    "refuses sign-in with TooManySignInAttempts once the limit is hit",
+    () =>
+      Effect.gen(function* refusesThrottledSignIn() {
+        yield* signUpAna;
+
+        const response = yield* postJson("/sessions", {
+          email: ana.email,
+          password: ana.password,
+        });
+
+        const body = yield* response.json;
+
+        expect(response.status).toBe(429);
+        expect(
+          yield* Schema.decodeUnknownEffect(TooManySignInAttempts)(body)
+        ).toStrictEqual(new TooManySignInAttempts());
+        expect(JSON.stringify(body)).not.toContain("token");
+      }).pipe(Effect.provide(serveWith(MemoryAccounts, RefusingSignInThrottle)))
   );
 });
 

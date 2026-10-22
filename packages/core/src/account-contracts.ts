@@ -12,6 +12,7 @@ import {
 import { EmailTaken } from "./email-taken.js";
 import { HandleTaken } from "./handle-taken.js";
 import { InvalidCredentials } from "./invalid-credentials.js";
+import { TooManySignInAttempts } from "./too-many-sign-in-attempts.js";
 import { Unauthenticated } from "./unauthenticated.js";
 
 export const SignUpInput = Schema.Struct({
@@ -36,8 +37,8 @@ export const signUpContract = defineContract("signUp", {
 
 export const signInContract = defineContract("signIn", {
   description:
-    "Sign in with an email and password. Send the returned session token as `Authorization: Bearer <token>`.",
-  failure: InvalidCredentials,
+    "Sign in with an email and password. Send the returned session token as `Authorization: Bearer <token>`. After too many attempts for one email, wait a minute before trying again.",
+  failure: Schema.Union([InvalidCredentials, TooManySignInAttempts]),
   http: { method: "POST", path: "/sessions" },
   input: SignInInput,
   output: SignedIn,
