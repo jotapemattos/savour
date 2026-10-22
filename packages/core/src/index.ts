@@ -6,6 +6,7 @@ import {
 } from "./account-capabilities.js";
 import { databaseHealth } from "./database-health-capabilities.js";
 import { health } from "./health-capabilities.js";
+import { addRestaurant } from "./restaurant-capabilities.js";
 import { searchRestaurants } from "./restaurant-search-capabilities.js";
 import {
   deleteVisit,
@@ -54,13 +55,34 @@ export { PlaceSearchUnavailable } from "./place-search-unavailable.js";
 export { PlaceSearch, type PlaceSearchService } from "./place-search.js";
 
 export {
+  ProviderRestaurant,
   Restaurant,
   Restaurants,
+  UserAddedRestaurant,
+  type NewUserAddedRestaurant,
   type RestaurantsService,
 } from "./restaurants.js";
 
+export { RestaurantNotFound } from "./restaurant-not-found.js";
+
+export { InvalidRestaurant } from "./invalid-restaurant.js";
+
 export {
+  AddRestaurantInput,
+  AddedRestaurant,
+  addRestaurantContract,
+} from "./restaurant-contracts.js";
+
+export {
+  addRestaurant,
+  logVisitToRestaurantAction,
+} from "./restaurant-capabilities.js";
+
+export {
+  ProviderResult,
   RestaurantSearchResults,
+  SearchResult,
+  UserAddedResult,
   searchRestaurantsContract,
 } from "./restaurant-search-contracts.js";
 
@@ -132,6 +154,7 @@ export const capabilities = [
   signOut,
   currentAccount,
   searchRestaurants,
+  addRestaurant,
   logVisit,
   editVisit,
   deleteVisit,

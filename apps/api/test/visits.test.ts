@@ -16,6 +16,7 @@ import {
   editVisitAction,
   logVisitAction,
   readDiaryAction,
+  RestaurantNotFound,
   Visits,
 } from "@savour/core";
 import type { EditVisitInput, LogVisitInput } from "@savour/core";
@@ -165,7 +166,82 @@ const currentRatingOf = (
     Effect.provide(visits.layer)
   );
 
+const barDoZe = {
+  addedBy: "bia",
+  address: "Rua X, 10, Bragança Paulista - SP",
+  id: "restaurant-added-1",
+  name: "Bar do Zé",
+  source: "user",
+} as const;
+
+const logToRestaurantAs = (token: string, body: Record<string, string>) =>
+  HttpClient.post("/visits", {
+    body: HttpBody.jsonUnsafe({ date: "2026-10-10", ...body }),
+    headers: { authorization: `Bearer ${token}` },
+  });
+
 describe("visit logging", () => {
+  it.effect("logs a visit to a user-added restaurant by its id", () => {
+    const visits = memoryVisits();
+
+    visits.restaurants.push(barDoZe);
+
+    return Effect.gen(function* logsUserAdded() {
+      const token = yield* signUpAna;
+
+      const response = yield* logToRestaurantAs(token, {
+        restaurantId: barDoZe.id,
+      });
+
+      const diary = yield* diaryOf(token);
+
+      expect(response.status).toBe(200);
+      expect(diary.visits).toMatchObject([
+        { date: "2026-10-10", place: null, restaurant: barDoZe },
+      ]);
+    }).pipe(onToday, Effect.provide(serveWith(visits)));
+  });
+
+  it.effect("answers 404 RestaurantNotFound for an unknown restaurant id", () =>
+    Effect.gen(function* refusesUnknownRestaurant() {
+      const token = yield* signUpAna;
+
+      const response = yield* logToRestaurantAs(token, {
+        restaurantId: "restaurant-nope",
+      });
+
+      expect(response.status).toBe(404);
+      expect(
+        yield* Schema.decodeUnknownEffect(RestaurantNotFound)(
+          yield* response.json
+        )
+      ).toStrictEqual(
+        new RestaurantNotFound({ restaurantId: "restaurant-nope" })
+      );
+    }).pipe(onToday, Effect.provide(serveWith(memoryVisits())))
+  );
+
+  it.effect("needs exactly one of placeId or restaurantId", () => {
+    const visits = memoryVisits();
+
+    visits.restaurants.push(barDoZe);
+
+    return Effect.gen(function* refusesAmbiguousRestaurant() {
+      const token = yield* signUpAna;
+
+      const statuses = yield* Effect.forEach(
+        [{}, { placeId: "ChIJbraganca", restaurantId: barDoZe.id }],
+        (body) =>
+          logToRestaurantAs(token, body).pipe(
+            Effect.map(({ status }) => status)
+          )
+      );
+
+      expect(statuses).toStrictEqual([400, 400]);
+      expect(visits.stored).toStrictEqual([]);
+    }).pipe(onToday, Effect.provide(serveWith(visits)));
+  });
+
   it.effect("logs a visit and shows it at the top of the diary", () => {
     const visits = memoryVisits();
 

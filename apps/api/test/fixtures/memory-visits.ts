@@ -1,28 +1,60 @@
 import {
+  RestaurantNotFound,
   Restaurants,
   VisitNotFound,
   Visits,
   currentRatingFrom,
   diaryOrder,
 } from "@savour/core";
-import type { StoredVisit } from "@savour/core";
+import type { Restaurant, StoredVisit } from "@savour/core";
 import { Effect, Layer } from "effect";
 
 interface OwnedVisit extends StoredVisit {
   readonly accountId: string;
 }
 
-const MemoryRestaurants = Layer.succeed(Restaurants, {
-  materialize: (placeId) =>
-    Effect.succeed({
-      id: `restaurant-${placeId}`,
-      placeId,
-      source: "provider",
-    }),
-});
+const memoryRestaurants = (added: (typeof Restaurant.Type)[]) =>
+  Layer.succeed(Restaurants, {
+    add: (restaurant) =>
+      Effect.sync(() => {
+        const userAdded = {
+          ...restaurant,
+          id: `restaurant-added-${String(added.length + 1)}`,
+          source: "user" as const,
+        };
+
+        added.push(userAdded);
+
+        return userAdded;
+      }),
+    addedByUsersMatching: (query) =>
+      Effect.sync(() =>
+        added.flatMap((restaurant) =>
+          restaurant.source === "user" &&
+          restaurant.name.toLowerCase().includes(query.toLowerCase())
+            ? [restaurant]
+            : []
+        )
+      ),
+    find: (restaurantId) =>
+      Effect.suspend(() => {
+        const found = added.find(({ id }) => id === restaurantId);
+
+        return found === undefined
+          ? Effect.fail(new RestaurantNotFound({ restaurantId }))
+          : Effect.succeed(found);
+      }),
+    materialize: (placeId) =>
+      Effect.succeed({
+        id: `restaurant-${placeId}`,
+        placeId,
+        source: "provider",
+      }),
+  });
 
 export const memoryVisits = () => {
   const stored: OwnedVisit[] = [];
+  const restaurants: (typeof Restaurant.Type)[] = [];
   let logged = 0;
 
   const ownedBy = (accountId: string) =>
@@ -81,5 +113,9 @@ export const memoryVisits = () => {
       ),
   });
 
-  return { layer: Layer.merge(MemoryRestaurants, visits), stored };
+  return {
+    layer: Layer.merge(memoryRestaurants(restaurants), visits),
+    restaurants,
+    stored,
+  };
 };

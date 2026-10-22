@@ -6,6 +6,7 @@ import {
 } from "./account-contracts.js";
 import { databaseHealthContract } from "./database-health-contracts.js";
 import { healthContract } from "./health-contracts.js";
+import { addRestaurantContract } from "./restaurant-contracts.js";
 import { searchRestaurantsContract } from "./restaurant-search-contracts.js";
 import {
   deleteVisitContract,
@@ -28,13 +29,24 @@ export { LatLng, Place, PriceLevel, SearchQuery } from "./place-schemas.js";
 
 export { PlaceSearchUnavailable } from "./place-search-unavailable.js";
 
-export { RestaurantSearchResults } from "./restaurant-search-contracts.js";
+export {
+  ProviderResult,
+  RestaurantSearchResults,
+  SearchResult,
+  UserAddedResult,
+} from "./restaurant-search-contracts.js";
 
 export { InvalidRating } from "./invalid-rating.js";
 
 export { InvalidVisitDate } from "./invalid-visit-date.js";
 
 export { VisitNotFound } from "./visit-not-found.js";
+
+export { RestaurantNotFound } from "./restaurant-not-found.js";
+
+export { InvalidRestaurant } from "./invalid-restaurant.js";
+
+export { AddRestaurantInput, AddedRestaurant } from "./restaurant-contracts.js";
 
 export { EditVisitInput, LogVisitInput } from "./visit-contracts.js";
 
@@ -54,6 +66,7 @@ export const contracts = [
   signOutContract,
   currentAccountContract,
   searchRestaurantsContract,
+  addRestaurantContract,
   logVisitContract,
   editVisitContract,
   deleteVisitContract,

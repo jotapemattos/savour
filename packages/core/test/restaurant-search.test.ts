@@ -2,13 +2,16 @@ import { describe, expect, it } from "@effect/vitest";
 import { Effect, Exit, Layer, Option, Schema } from "effect";
 
 import {
+  DatabaseUnavailable,
   PlaceSearch,
   PlaceSearchUnavailable,
+  RestaurantNotFound,
+  Restaurants,
   addRestaurantAction,
   searchRestaurants,
   searchRestaurantsContract,
 } from "../src/index.js";
-import type { LatLng, Place } from "../src/index.js";
+import type { LatLng, Place, UserAddedRestaurant } from "../src/index.js";
 
 const pizzariaBraganca: typeof Place.Type = {
   address: "R. Cel. Teófilo Leme, 1240 - Centro, Bragança Paulista - SP",
@@ -26,7 +29,31 @@ const ramenCampinas: typeof Place.Type = {
   priceLevel: 2,
 };
 
-const answering = (places: readonly (typeof Place.Type)[]) => {
+const barDoZe: typeof UserAddedRestaurant.Type = {
+  addedBy: "ana",
+  address: "Rua X, 10, Bragança Paulista - SP",
+  id: "restaurant-bar-do-ze",
+  name: "Bar do Zé",
+  source: "user",
+};
+
+const addedByUsers = (
+  matching: Restaurants["Service"]["addedByUsersMatching"]
+) =>
+  Layer.succeed(Restaurants, {
+    add: () => Effect.die("unused"),
+    addedByUsersMatching: matching,
+    find: (restaurantId) =>
+      Effect.fail(new RestaurantNotFound({ restaurantId })),
+    materialize: () => Effect.die("unused"),
+  });
+
+const noUserAdded = addedByUsers(() => Effect.succeed([]));
+
+const answering = (
+  places: readonly (typeof Place.Type)[],
+  userAdded: Layer.Layer<Restaurants> = noUserAdded
+) => {
   const queries: string[] = [];
   const nears: Option.Option<typeof LatLng.Type>[] = [];
 
@@ -40,7 +67,7 @@ const answering = (places: readonly (typeof Place.Type)[]) => {
 
         return places;
       }),
-  });
+  }).pipe(Layer.merge(userAdded));
 
   return { layer, nears, queries };
 };
@@ -67,7 +94,9 @@ describe("restaurant search", () => {
         .handler({ q: "ramen campinas" })
         .pipe(Effect.provide(answering([ramenCampinas]).layer));
 
-      expect(found.results).toStrictEqual([ramenCampinas]);
+      expect(found.results).toStrictEqual([
+        { ...ramenCampinas, userAdded: false },
+      ]);
     })
   );
 
@@ -93,11 +122,65 @@ describe("restaurant search", () => {
           details: () => Effect.fail(unavailable),
           search: () => Effect.fail(unavailable),
         }),
+        Effect.provide(noUserAdded),
         Effect.exit
       );
 
       expect(exit).toStrictEqual(Exit.fail(unavailable));
     })
+  );
+
+  it.effect("lists matching user-added restaurants first, marked", () =>
+    Effect.gen(function* mergesUserAdded() {
+      const asked: string[] = [];
+
+      const fake = answering(
+        [pizzariaBraganca],
+        addedByUsers((query) =>
+          Effect.sync(() => {
+            asked.push(query);
+
+            return [barDoZe];
+          })
+        )
+      );
+
+      const found = yield* searchRestaurants
+        .handler({ q: "Bar do Zé" })
+        .pipe(Effect.provide(fake.layer));
+
+      expect(asked).toStrictEqual(["Bar do Zé"]);
+      expect(found.results).toStrictEqual([
+        {
+          addedBy: "ana",
+          address: "Rua X, 10, Bragança Paulista - SP",
+          name: "Bar do Zé",
+          restaurantId: "restaurant-bar-do-ze",
+          userAdded: true,
+        },
+        { ...pizzariaBraganca, userAdded: false },
+      ]);
+    })
+  );
+
+  it.effect(
+    "fails with DatabaseUnavailable when user-added restaurants can't be read",
+    () =>
+      Effect.gen(function* failsOnDatabase() {
+        const unavailable = new DatabaseUnavailable({ reason: "unreachable" });
+
+        const exit = yield* searchRestaurants.handler({ q: "pizzaria" }).pipe(
+          Effect.provide(
+            answering(
+              [pizzariaBraganca],
+              addedByUsers(() => Effect.fail(unavailable))
+            ).layer
+          ),
+          Effect.exit
+        );
+
+        expect(exit).toStrictEqual(Exit.fail(unavailable));
+      })
   );
 
   it.effect("searches without a location when near is absent", () =>

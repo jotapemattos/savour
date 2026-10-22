@@ -93,7 +93,10 @@ const found = (
     readonly priceLevel: number | null;
   }[]
 ): ScriptedReply => ({
-  body: { next: [addRestaurantAction], results },
+  body: {
+    next: [addRestaurantAction],
+    results: results.map((place) => ({ ...place, userAdded: false })),
+  },
   status: 200,
 });
 

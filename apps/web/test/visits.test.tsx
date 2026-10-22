@@ -112,7 +112,10 @@ const openLogSheet = (
 
     const api = scriptedApi(
       {
-        [SEARCH]: { body: { next: [], results: [bellaNapoli] }, status: 200 },
+        [SEARCH]: {
+          body: { next: [], results: [{ ...bellaNapoli, userAdded: false }] },
+          status: 200,
+        },
         ...script,
       },
       requests,
