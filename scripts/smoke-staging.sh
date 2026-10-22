@@ -72,6 +72,11 @@ expect_status "edit a visit" 200 \
     --header 'content-type: application/json' --data '{"rating":4.5}')"
 expect_status "search the diary" 200 \
   "$(status --get "${api}/diary" --data-urlencode "q=pizza" --header "authorization: Bearer ${token}")"
+expect_status "like a log with no review" 409 \
+  "$(status --request PUT "${api}/visits/${visit_id}/like" --header "authorization: Bearer ${token}" \
+    --header 'content-type: application/json' --data '{}')"
+expect_status "unlike a review never liked" 200 \
+  "$(status --request DELETE "${api}/visits/${visit_id}/like" --header "authorization: Bearer ${token}")"
 expect_status "delete a visit" 200 \
   "$(status --request DELETE "${api}/visits/${visit_id}" --header "authorization: Bearer ${token}")"
 expect_status "deleted visit" 404 \

@@ -231,6 +231,8 @@ describe("visit logging", () => {
           date: "2026-10-10",
           dishes: [],
           id: "visit-1",
+          likeCount: 0,
+          likedByMe: false,
           lovedIt: false,
           place: pizzariaBraganca,
           rating: null,

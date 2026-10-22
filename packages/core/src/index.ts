@@ -7,6 +7,7 @@ import {
 import { databaseHealth } from "./database-health-capabilities.js";
 import { health } from "./health-capabilities.js";
 import { searchRestaurants } from "./restaurant-search-capabilities.js";
+import { likeReview, unlikeReview } from "./review-like-capabilities.js";
 import {
   deleteVisit,
   diary,
@@ -110,6 +111,25 @@ export {
 export { EditVisitInput, LogVisitInput } from "./visit-contracts.js";
 
 export {
+  ReviewLikes,
+  noLikes,
+  type LikeTally,
+  type LikeTarget,
+  type ReviewLikesService,
+} from "./review-likes.js";
+
+export { CannotLikeOwnReview } from "./cannot-like-own-review.js";
+
+export { NotAReview } from "./not-a-review.js";
+
+export { LikedReview } from "./review-like-contracts.js";
+
+export {
+  likeReviewAction,
+  unlikeReviewAction,
+} from "./review-like-capabilities.js";
+
+export {
   deleteVisitAction,
   editVisitAction,
   logVisitAction,
@@ -136,4 +156,6 @@ export const capabilities = [
   editVisit,
   deleteVisit,
   diary,
+  likeReview,
+  unlikeReview,
 ] as const;

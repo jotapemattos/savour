@@ -57,6 +57,7 @@ const entry = (
   id: string,
   fields: {
     readonly date: string;
+    readonly likeCount?: number;
     readonly rating: number | null;
     readonly review?: string;
     readonly tags?: readonly string[];
@@ -65,6 +66,8 @@ const entry = (
   date: fields.date,
   dishes: [],
   id,
+  likeCount: fields.likeCount ?? 0,
+  likedByMe: false,
   lovedIt: false,
   place: bellaNapoli,
   rating: fields.rating,
@@ -335,6 +338,41 @@ describe("log sheet and diary", () => {
       ).toBeDefined();
       expect(oldest?.textContent).toContain("Sep 2, 2026");
       expect(within(oldest ?? document.body).queryByRole("img")).toBeNull();
+    })
+  );
+
+  it.live("counts the likes under a review", () =>
+    Effect.gen(function* countsLikes() {
+      openAt("/diary", {
+        [DIARY]: diaryOf([
+          entry("v3", {
+            date: "2026-10-18",
+            likeCount: 2,
+            rating: 4,
+            review: "Crisp.",
+          }),
+          entry("v2", {
+            date: "2026-10-10",
+            likeCount: 1,
+            rating: 4,
+            review: "Soggy.",
+          }),
+          entry("v1", { date: "2026-09-02", rating: null, review: "Fine." }),
+        ]),
+      });
+
+      const items = yield* appeared(() => {
+        const found = screen.getAllByRole("listitem");
+        expect(found).toHaveLength(3);
+
+        return found;
+      });
+
+      expect(items.map((item) => item.textContent)).toStrictEqual([
+        expect.stringContaining("Crisp.2 likes"),
+        expect.stringMatching(/Soggy\.1 like$/u),
+        expect.not.stringContaining("like"),
+      ]);
     })
   );
 

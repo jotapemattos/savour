@@ -5,6 +5,7 @@ import {
   date,
   index,
   pgTable,
+  primaryKey,
   real,
   text,
   timestamp,
@@ -59,4 +60,18 @@ export const visits = pgTable(
       table.createdAt.desc()
     ),
   ]
+);
+
+export const reviewLikes = pgTable(
+  "review_likes",
+  {
+    accountId: text("account_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    visitId: uuid("visit_id")
+      .notNull()
+      .references(() => visits.id, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.visitId, table.accountId] })]
 );
