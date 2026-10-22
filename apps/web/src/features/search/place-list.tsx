@@ -2,6 +2,7 @@ import type { Place } from "@savour/core/contracts";
 import { motion, useReducedMotion } from "motion/react";
 
 import { Button } from "#/components/ui/button";
+import { WantToGoToggle } from "#/features/want-to-go/want-to-go-toggle";
 
 const PRICE_LABELS = [
   "Free",
@@ -76,16 +77,19 @@ export const PlaceList = (props: {
             </p>
             <PlaceDetails place={place} />
           </div>
-          <Button
-            className="text-foreground mx-0"
-            onClick={() => {
-              props.onLog(place);
-            }}
-            type="button"
-            variant="quiet"
-          >
-            Log a visit<span className="sr-only"> to {place.name}</span>
-          </Button>
+          <div className="flex shrink-0 flex-col items-end">
+            <Button
+              className="text-foreground mx-0"
+              onClick={() => {
+                props.onLog(place);
+              }}
+              type="button"
+              variant="quiet"
+            >
+              Log a visit<span className="sr-only"> to {place.name}</span>
+            </Button>
+            <WantToGoToggle place={place} />
+          </div>
         </motion.li>
       ))}
     </ul>
