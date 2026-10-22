@@ -1,5 +1,7 @@
+import { useMessages } from "#/i18n/messages";
+
 export const EmptyLog = () => (
   <p className="text-muted-foreground text-pretty">
-    Restaurants you log will show up here.
+    {useMessages().t.shell.emptyLog}
   </p>
 );

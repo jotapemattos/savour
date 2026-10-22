@@ -4,6 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { Effect, Schedule } from "effect";
 
 import { SavourShell } from "../src/features/shell/savour-shell";
+import { en } from "../src/i18n/en";
 import { createSavourRouter } from "../src/savour-router";
 import { memorySession, scriptedApi } from "./fixtures/scripted-api";
 
@@ -15,7 +16,11 @@ const appearedStatus = Effect.try(() => screen.getByRole("status")).pipe(
 
 describe("web shell", () => {
   it("renders the shell at phone width", () => {
-    render(<SavourShell apiStatus="ok">content</SavourShell>);
+    render(
+      <SavourShell apiStatus="ok" messages={en.shell}>
+        content
+      </SavourShell>
+    );
 
     const banner = screen.getByRole("banner");
     const root = banner.parentElement;

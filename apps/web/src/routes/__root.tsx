@@ -14,6 +14,7 @@ import { apiStatusQuery } from "#/client/savour-api";
 import type { ApiTransport } from "#/client/savour-api";
 import { SavourShell } from "#/features/shell/savour-shell";
 import type { Locale } from "#/i18n/locale";
+import { catalogs, useMessages } from "#/i18n/messages";
 
 import appCss from "#/styles.css?url";
 
@@ -37,14 +38,17 @@ const RootDocument = (props: { readonly children: ReactNode }) => (
 );
 
 const RootLayout = () => (
-  <SavourShell apiStatus={useLoaderData({ from: "__root__" })}>
+  <SavourShell
+    apiStatus={useLoaderData({ from: "__root__" })}
+    messages={useMessages().t.shell}
+  >
     <Outlet />
   </SavourShell>
 );
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
-  head: () => ({
+  head: ({ match }) => ({
     links: [{ href: appCss, rel: "stylesheet" }],
     meta: [
       { charSet: "utf-8" },
@@ -64,7 +68,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         name: "theme-color",
       },
       { content: "light dark", name: "color-scheme" },
-      { title: "Savour" },
+      { title: catalogs[match.context.locale].titles.app },
     ],
   }),
   // oxlint-disable-next-line typescript/promise-function-async -- TanStack Router awaits loaders as native Promises.
