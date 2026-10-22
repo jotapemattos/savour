@@ -15,6 +15,8 @@ const refusalMessages = {
   HandleTaken: "That handle is taken. Try another one.",
   InvalidCredentials:
     "That email and password don’t match. Check both and try again.",
+  TooManySignInAttempts:
+    "Too many sign-in attempts. Wait a minute, then try again.",
 } satisfies Record<SessionRefusal, string>;
 
 export class SessionUnreachable extends Data.TaggedError("SessionUnreachable")<{
