@@ -13,10 +13,8 @@ interface OwnedVisit extends StoredVisit {
   readonly accountId: string;
 }
 
-const memoryRestaurants = () => {
-  const added: (typeof Restaurant.Type)[] = [];
-
-  return Layer.succeed(Restaurants, {
+const memoryRestaurants = (added: (typeof Restaurant.Type)[]) =>
+  Layer.succeed(Restaurants, {
     add: (restaurant) =>
       Effect.sync(() => {
         const userAdded = {
@@ -53,10 +51,10 @@ const memoryRestaurants = () => {
         source: "provider",
       }),
   });
-};
 
 export const memoryVisits = () => {
   const stored: OwnedVisit[] = [];
+  const restaurants: (typeof Restaurant.Type)[] = [];
   let logged = 0;
 
   const ownedBy = (accountId: string) =>
@@ -115,5 +113,9 @@ export const memoryVisits = () => {
       ),
   });
 
-  return { layer: Layer.merge(memoryRestaurants(), visits), stored };
+  return {
+    layer: Layer.merge(memoryRestaurants(restaurants), visits),
+    restaurants,
+    stored,
+  };
 };

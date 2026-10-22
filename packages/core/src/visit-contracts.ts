@@ -5,6 +5,7 @@ import { DatabaseUnavailable } from "./database-health-contracts.js";
 import { InvalidRating } from "./invalid-rating.js";
 import { InvalidVisitDate } from "./invalid-visit-date.js";
 import { PlaceId } from "./place-schemas.js";
+import { RestaurantNotFound } from "./restaurant-not-found.js";
 import { Unauthenticated } from "./unauthenticated.js";
 import { VisitNotFound } from "./visit-not-found.js";
 import { Diary, LoggedVisit, VisitDeleted } from "./visit-schemas.js";
@@ -15,22 +16,36 @@ export const LogVisitInput = Schema.Struct({
   }),
   dishes: Schema.optionalKey(Schema.Array(Schema.String)),
   lovedIt: Schema.optionalKey(Schema.Boolean),
-  placeId: PlaceId,
+  placeId: Schema.optionalKey(PlaceId),
   rating: Schema.optionalKey(
     Schema.Finite.annotate({ description: "0.5 to 5 in half-star steps." })
+  ),
+  restaurantId: Schema.optionalKey(
+    Schema.String.annotate({
+      description:
+        "The `id` of a restaurant added by hand with `POST /restaurants`.",
+    })
   ),
   review: Schema.optionalKey(Schema.String),
   revisit: Schema.optionalKey(Schema.Boolean),
   tags: Schema.optionalKey(Schema.Array(Schema.String)),
-});
+}).check(
+  Schema.makeFilter(
+    ({ placeId, restaurantId }) =>
+      (placeId === undefined) !== (restaurantId === undefined) ||
+      "Send exactly one of `placeId` or `restaurantId`.",
+    { title: "one restaurant" }
+  )
+);
 
 export const logVisitContract = defineContract("logVisit", {
   description:
-    "Log a visit to a restaurant found with `GET /restaurants/search`, by its `placeId`, with the bearer token. Only the day is kept, never a time of day.",
+    "Log a visit with the bearer token to a restaurant found with `GET /restaurants/search`, by its `placeId`, or to one added by hand, by its `restaurantId`. Only the day is kept, never a time of day.",
   failure: Schema.Union([
     Unauthenticated,
     InvalidRating,
     InvalidVisitDate,
+    RestaurantNotFound,
     DatabaseUnavailable,
   ]),
   http: { method: "POST", path: "/visits" },

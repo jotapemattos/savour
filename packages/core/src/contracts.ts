@@ -36,6 +36,8 @@ export { InvalidVisitDate } from "./invalid-visit-date.js";
 
 export { VisitNotFound } from "./visit-not-found.js";
 
+export { RestaurantNotFound } from "./restaurant-not-found.js";
+
 export { EditVisitInput, LogVisitInput } from "./visit-contracts.js";
 
 export { Diary, DiaryEntry, Rating } from "./visit-schemas.js";

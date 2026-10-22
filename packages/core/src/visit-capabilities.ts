@@ -1,5 +1,5 @@
 import { implement } from "@savour/capability/implement";
-import { DateTime, Effect, Schema } from "effect";
+import { Data, DateTime, Effect, Schema } from "effect";
 
 import { requireSessionToken } from "./account-capabilities.js";
 import { Accounts } from "./accounts.js";
@@ -15,6 +15,7 @@ import {
   editVisitContract,
   logVisitContract,
 } from "./visit-contracts.js";
+import type { LogVisitInput } from "./visit-contracts.js";
 import {
   Rating,
   VisitDate,
@@ -138,13 +139,28 @@ const withPlaces = (visits: readonly (typeof Visit.Type)[]) =>
     }));
   });
 
+class UnnamedRestaurant extends Data.TaggedError("UnnamedRestaurant") {}
+
+const restaurantToLog = ({
+  placeId,
+  restaurantId,
+}: typeof LogVisitInput.Type) =>
+  Restaurants.use((restaurants) => {
+    if (restaurantId !== undefined) {
+      return restaurants.find(restaurantId);
+    }
+
+    return placeId === undefined
+      ? Effect.die(new UnnamedRestaurant())
+      : restaurants.materialize(placeId);
+  });
+
 export const logVisit = implement(logVisitContract, (input) =>
   Effect.gen(function* logVisitToDiary() {
     const accountId = yield* signedInAccountId;
     const date = yield* visitDayOf(input.date);
     const rating = yield* ratingOf(input.rating);
-    const restaurants = yield* Restaurants;
-    const restaurant = yield* restaurants.materialize(input.placeId);
+    const restaurant = yield* restaurantToLog(input);
     const visits = yield* Visits;
 
     const visit = yield* visits.log(accountId, {
