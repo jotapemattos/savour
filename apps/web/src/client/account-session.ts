@@ -11,7 +11,12 @@ export const SignedIn = Schema.TaggedStruct("SignedIn", { account: Account });
 export const SignedOut = Schema.TaggedStruct("SignedOut", {});
 
 export const Refused = Schema.TaggedStruct("Refused", {
-  reason: Schema.Literals(["EmailTaken", "HandleTaken", "InvalidCredentials"]),
+  reason: Schema.Literals([
+    "EmailTaken",
+    "HandleTaken",
+    "InvalidCredentials",
+    "TooManySignInAttempts",
+  ]),
 });
 
 export const AccountUnreachable = Schema.TaggedStruct("AccountUnreachable", {});
@@ -67,7 +72,10 @@ export const accountSession = (
             client.capabilities.signIn({ payload: input })
           ),
           Effect.flatMap(keptIn(jar)),
-          Effect.catchTag("InvalidCredentials", refused),
+          Effect.catchTags({
+            InvalidCredentials: refused,
+            TooManySignInAttempts: refused,
+          }),
           Effect.provide(transport.layer)
         )
       ),

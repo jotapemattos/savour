@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it } from "@effect/vitest";
-import { HandleTaken, InvalidCredentials } from "@savour/core";
+import {
+  HandleTaken,
+  InvalidCredentials,
+  TooManySignInAttempts,
+} from "@savour/core";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { Effect, Schedule } from "effect";
@@ -128,6 +132,35 @@ describe("sign-up and sign-in screens", () => {
 
       expect(alert.getAttribute("role")).toBe("alert");
       expect(window.location.pathname).toBe("/sign-in");
+    })
+  );
+
+  it.live("asks to wait after too many sign-in attempts", () =>
+    Effect.gen(function* showsThrottledSignIn() {
+      const kept: string[] = [];
+      openAt(
+        "/sign-in",
+        {
+          "POST /api/sessions": refusedWith(
+            TooManySignInAttempts,
+            new TooManySignInAttempts(),
+            429
+          ),
+        },
+        kept
+      );
+
+      yield* signInAsAna;
+
+      const alert = yield* appeared(() =>
+        screen.getByText(
+          "Too many sign-in attempts. Wait a minute, then try again."
+        )
+      );
+
+      expect(alert.getAttribute("role")).toBe("alert");
+      expect(window.location.pathname).toBe("/sign-in");
+      expect(kept).toStrictEqual([]);
     })
   );
 });

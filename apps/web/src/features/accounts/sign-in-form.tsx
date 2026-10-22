@@ -29,7 +29,8 @@ export const SignInForm = () => {
       failure={
         signIn.isError
           ? failureMessage(signIn.error)
-          : refusalMessage(signIn.data, "InvalidCredentials")
+          : (refusalMessage(signIn.data, "InvalidCredentials") ??
+            refusalMessage(signIn.data, "TooManySignInAttempts"))
       }
       onSubmit={signIn.mutate}
       pending={signIn.isPending}

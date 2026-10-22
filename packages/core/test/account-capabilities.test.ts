@@ -5,6 +5,8 @@ import {
   Accounts,
   InvalidCredentials,
   SessionCredential,
+  SignInThrottle,
+  TooManySignInAttempts,
   Unauthenticated,
   currentAccount,
   signIn,
@@ -40,6 +42,39 @@ const FakeAccounts = Layer.succeed(Accounts, {
 
 const noCredential = Layer.succeed(SessionCredential, Option.none());
 
+const recordingThrottle = (admits: boolean) => {
+  const keys: string[] = [];
+
+  const layer = Layer.succeed(SignInThrottle, {
+    admit: (key) =>
+      Effect.sync(() => {
+        keys.push(key);
+      }).pipe(
+        Effect.andThen(
+          admits ? Effect.void : Effect.fail(new TooManySignInAttempts())
+        )
+      ),
+  });
+
+  return { keys, layer };
+};
+
+const recordingAccounts = () => {
+  const signIns: string[] = [];
+
+  const layer = Layer.succeed(Accounts, {
+    accountForSession: () => Effect.fail(new Unauthenticated()),
+    signIn: ({ email }) =>
+      Effect.sync(() => {
+        signIns.push(email);
+      }).pipe(Effect.andThen(Effect.fail(new InvalidCredentials()))),
+    signOut: () => Effect.void,
+    signUp: () => Effect.succeed(ana),
+  });
+
+  return { layer, signIns };
+};
+
 describe("account capabilities", () => {
   it.effect("logs account.signed_up with the handle and no email", () =>
     Effect.gen(function* logsSignUp() {
@@ -70,7 +105,13 @@ describe("account capabilities", () => {
       const exit = yield* signIn
         .handler({ email: "ana@example.test", password: "wrong" })
         .pipe(
-          Effect.provide(Layer.merge(FakeAccounts, logs.layer)),
+          Effect.provide(
+            Layer.mergeAll(
+              FakeAccounts,
+              recordingThrottle(true).layer,
+              logs.layer
+            )
+          ),
           Effect.exit
         );
 
@@ -81,6 +122,72 @@ describe("account capabilities", () => {
         message: "account.sign_in_failed",
       });
       expect(JSON.stringify(logs.entries)).not.toMatch(/example\.test|wrong/u);
+    })
+  );
+
+  it.effect("checks the throttle before the password", () =>
+    Effect.gen(function* checksThrottleFirst() {
+      const accounts = recordingAccounts();
+
+      const exit = yield* signIn
+        .handler({ email: "ana@example.test", password: "wrong" })
+        .pipe(
+          Effect.provide(
+            Layer.merge(accounts.layer, recordingThrottle(false).layer)
+          ),
+          Effect.exit
+        );
+
+      expect(exit).toStrictEqual(Exit.fail(new TooManySignInAttempts()));
+      expect(accounts.signIns).toStrictEqual([]);
+    })
+  );
+
+  it.effect(
+    "keys the throttle on the normalized email, never the raw value",
+    () =>
+      Effect.gen(function* keysOnNormalizedEmail() {
+        const throttle = recordingThrottle(true);
+
+        for (const email of ["Ana@Example.test", "ana@example.test"]) {
+          yield* signIn
+            .handler({ email, password: "wrong" })
+            .pipe(
+              Effect.provide(Layer.merge(FakeAccounts, throttle.layer)),
+              Effect.exit
+            );
+        }
+
+        const [first, second] = throttle.keys;
+
+        expect(throttle.keys).toHaveLength(2);
+        expect(first).toBe(second);
+        expect(first).toMatch(/^[0-9a-f]{64}$/u);
+        expect(first).not.toContain("example.test");
+      })
+  );
+
+  it.effect("logs account.sign_in_throttled without the email", () =>
+    Effect.gen(function* logsThrottledSignIn() {
+      const logs = capturedLogs();
+      const throttle = recordingThrottle(false);
+
+      yield* signIn
+        .handler({ email: "ana@example.test", password: "wrong" })
+        .pipe(
+          Effect.provide(
+            Layer.mergeAll(FakeAccounts, throttle.layer, logs.layer)
+          ),
+          Effect.exit
+        );
+
+      expect(logs.entries).toHaveLength(1);
+      expect(logs.entries[0]).toMatchObject({
+        level: "INFO",
+        message: "account.sign_in_throttled",
+      });
+      expect(JSON.stringify(logs.entries)).not.toContain("example.test");
+      expect(JSON.stringify(logs.entries)).not.toContain(throttle.keys[0]);
     })
   );
 

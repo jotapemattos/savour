@@ -45,6 +45,13 @@ export {
 
 export { Accounts, type AccountsService } from "./accounts.js";
 
+export {
+  SignInThrottle,
+  type SignInThrottleService,
+} from "./sign-in-throttle.js";
+
+export { TooManySignInAttempts } from "./too-many-sign-in-attempts.js";
+
 export { SessionCredential } from "./session-credential.js";
 
 export { LatLng, Place, PlaceId, PriceLevel } from "./place-schemas.js";
