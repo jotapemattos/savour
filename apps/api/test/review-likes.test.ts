@@ -3,6 +3,7 @@ import { describe, expect, it } from "@effect/vitest";
 import {
   CannotLikeOwnReview,
   Database,
+  Diary,
   LikedReview,
   LoggedVisit,
   NotAReview,
@@ -218,6 +219,38 @@ describe("review likes", () => {
       expect(visits.likes).toStrictEqual([]);
     }).pipe(onToday, Effect.provide(serveWith(visits)));
   });
+
+  it.effect("shows the like count wherever the author reads the review", () =>
+    Effect.gen(function* showsCount() {
+      const { ana, bia, visitId } = yield* anaAndBiasReview;
+
+      yield* likeAs(ana, visitId);
+      yield* likeAs(yield* signUpAs("caio"), visitId);
+
+      const diary = yield* HttpClient.get("/diary", {
+        headers: { authorization: `Bearer ${bia}` },
+      }).pipe(
+        Effect.flatMap((response) => response.json),
+        Effect.flatMap(Schema.decodeUnknownEffect(Diary))
+      );
+
+      const edited = yield* HttpClient.patch(`/visits/${visitId}`, {
+        body: HttpBody.jsonUnsafe({ rating: 4 }),
+        headers: { authorization: `Bearer ${bia}` },
+      }).pipe(
+        Effect.flatMap((response) => response.json),
+        Effect.flatMap(Schema.decodeUnknownEffect(LoggedVisit))
+      );
+
+      for (const entry of [diary.visits[0], edited.visit]) {
+        expect(entry).toMatchObject({
+          id: visitId,
+          likeCount: 2,
+          likedByMe: false,
+        });
+      }
+    }).pipe(onToday, Effect.provide(serveWith(memoryVisits())))
+  );
 
   it.effect("deletes a review's likes with the visit", () => {
     const visits = memoryVisits();

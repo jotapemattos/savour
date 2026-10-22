@@ -7,8 +7,7 @@ import { NextAction } from "./health-contracts.js";
 import { NotAReview } from "./not-a-review.js";
 import { Unauthenticated } from "./unauthenticated.js";
 import { VisitNotFound } from "./visit-not-found.js";
-
-export const LikeCount = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
+import { LikeCount } from "./visit-schemas.js";
 
 export const LikedReview = Schema.Struct({
   likeCount: LikeCount,

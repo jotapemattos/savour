@@ -8,6 +8,7 @@ import { InvalidVisitDate } from "./invalid-visit-date.js";
 import type { Place } from "./place-schemas.js";
 import { PlaceSearch } from "./place-search.js";
 import { Restaurants } from "./restaurants.js";
+import { ReviewLikes, noLikes } from "./review-likes.js";
 import {
   deleteVisitContract,
   diaryContract,
@@ -126,6 +127,13 @@ const withPlaces = (visits: readonly (typeof Visit.Type)[]) =>
     }));
   });
 
+const likesOn = (accountId: string, visitIds: readonly string[]) =>
+  ReviewLikes.use((likes) => likes.tallies(accountId, visitIds)).pipe(
+    Effect.map(
+      (tallies) => (visitId: string) => tallies.get(visitId) ?? noLikes
+    )
+  );
+
 export const logVisit = implement(logVisitContract, (input) =>
   Effect.gen(function* logVisitToDiary() {
     const accountId = yield* signedInAccountId;
@@ -157,7 +165,10 @@ export const logVisit = implement(logVisitContract, (input) =>
 
     const place = yield* placeOf(visit.restaurant.placeId);
 
-    return { next: [readDiaryAction], visit: { ...visit, place } };
+    return {
+      next: [readDiaryAction],
+      visit: { ...visit, ...noLikes, place },
+    };
   })
 );
 
@@ -181,8 +192,12 @@ export const editVisit = implement(
       );
 
       const place = yield* placeOf(visit.restaurant.placeId);
+      const likesOf = yield* likesOn(accountId, [visit.id]);
 
-      return { next: [readDiaryAction], visit: { ...visit, place } };
+      return {
+        next: [readDiaryAction],
+        visit: { ...visit, ...likesOf(visit.id), place },
+      };
     })
 );
 
@@ -212,9 +227,16 @@ export const diary = implement(diaryContract, ({ q }) =>
       .map(({ visit }) => visit)
       .filter(matchesDiaryQuery(q ?? ""));
 
+    const entries = yield* withPlaces(visitsNewestFirst);
+
+    const likesOf = yield* likesOn(
+      accountId,
+      entries.map(({ id }) => id)
+    );
+
     return {
       next: [logVisitAction, editVisitAction, deleteVisitAction],
-      visits: yield* withPlaces(visitsNewestFirst),
+      visits: entries.map((entry) => ({ ...entry, ...likesOf(entry.id) })),
     };
   })
 );

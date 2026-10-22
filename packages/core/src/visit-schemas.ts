@@ -39,8 +39,12 @@ export const Visit = Schema.Struct({
   tags: Schema.Array(Schema.String),
 });
 
+export const LikeCount = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
+
 export const DiaryEntry = Schema.Struct({
   ...Visit.fields,
+  likeCount: LikeCount,
+  likedByMe: Schema.Boolean,
   place: Schema.NullOr(Place),
 });
 

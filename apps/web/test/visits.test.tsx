@@ -65,6 +65,8 @@ const entry = (
   date: fields.date,
   dishes: [],
   id,
+  likeCount: 0,
+  likedByMe: false,
   lovedIt: false,
   place: bellaNapoli,
   rating: fields.rating,
