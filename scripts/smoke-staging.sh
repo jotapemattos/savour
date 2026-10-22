@@ -82,6 +82,8 @@ expect_status "duplicate handle" 409 \
   "$(post_json /accounts "$(json "other+${run}@example.test" "$handle" "$password")")"
 expect_status "wrong password" 401 \
   "$(post_json /sessions "$(printf '{"email":"%s","password":"wrong"}' "$email")")"
+expect_status "forged Google token" 401 \
+  "$(post_json /sessions/google '{"idToken":"not-a-google-token"}')"
 expect_status "sign out" 200 \
   "$(status --request DELETE "${api}/sessions/current" --header "authorization: Bearer ${token}")"
 expect_status "signed out" 401 \
