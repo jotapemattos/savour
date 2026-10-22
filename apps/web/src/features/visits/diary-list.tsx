@@ -14,6 +14,9 @@ export const formatVisitDay = (date: string) =>
     Option.getOrElse(() => date)
   );
 
+export const likesLabel = (likeCount: number) =>
+  likeCount === 1 ? "1 like" : `${String(likeCount)} likes`;
+
 export const DiaryList = (props: {
   readonly onEdit: (visit: typeof DiaryEntry.Type) => void;
   readonly visits: readonly (typeof DiaryEntry.Type)[];
@@ -49,6 +52,11 @@ export const DiaryList = (props: {
           {visit.review === null ? null : (
             <span className="text-muted-foreground line-clamp-3 text-sm text-pretty">
               {visit.review}
+            </span>
+          )}
+          {visit.review === null || visit.likeCount === 0 ? null : (
+            <span className="text-muted-foreground text-xs tabular-nums">
+              {likesLabel(visit.likeCount)}
             </span>
           )}
         </button>
