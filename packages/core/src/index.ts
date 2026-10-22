@@ -110,6 +110,14 @@ export {
 export { EditVisitInput, LogVisitInput } from "./visit-contracts.js";
 
 export {
+  ReviewLikes,
+  noLikes,
+  type LikeTally,
+  type LikeTarget,
+  type ReviewLikesService,
+} from "./review-likes.js";
+
+export {
   deleteVisitAction,
   editVisitAction,
   logVisitAction,
