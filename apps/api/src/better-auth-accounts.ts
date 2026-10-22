@@ -14,9 +14,22 @@ import {
 } from "@savour/core";
 import { RuntimeContext } from "alchemy";
 import { bearer } from "better-auth/plugins";
-import { Data, Effect, Layer, Option, Schema } from "effect";
+import type { GoogleOptions } from "better-auth/social-providers";
+import { Data, Effect, Layer, Option, Redacted, Schema } from "effect";
 
-const authOptions = {
+export interface GoogleSignInOptions extends Pick<
+  GoogleOptions,
+  "getUserInfo" | "verifyIdToken"
+> {
+  readonly clientId: Redacted.Redacted;
+}
+
+export interface BetterAuthAccountsOptions {
+  readonly google: GoogleSignInOptions;
+  readonly secret?: BetterAuthProps["secret"];
+}
+
+const baseAuthOptions = {
   basePath: "/auth",
   emailAndPassword: { enabled: true },
   logger: { disabled: true },
@@ -28,6 +41,22 @@ const authOptions = {
     },
   },
 } satisfies BetterAuthProps;
+
+const googleProviderOptions = ({
+  clientId,
+  ...verifier
+}: GoogleSignInOptions) =>
+  ({
+    ...verifier,
+    clientId: Redacted.value(clientId),
+    disableImplicitSignUp: true,
+  }) satisfies GoogleOptions;
+
+const authOptionsWith = (google: GoogleSignInOptions) =>
+  ({
+    ...baseAuthOptions,
+    socialProviders: { google: googleProviderOptions(google) },
+  }) satisfies BetterAuthProps;
 
 class MissingRuntimeContext extends Data.TaggedError("MissingRuntimeContext")<{
   readonly adapter: "better-auth-accounts";
@@ -66,10 +95,15 @@ const failWhenCode = <A, R, Failure>(
       : Effect.die(apiFailure)
   );
 
-export const betterAuthAccounts = (secret?: BetterAuthProps["secret"]) =>
+export const betterAuthAccounts = ({
+  google,
+  secret,
+}: BetterAuthAccountsOptions) =>
   Layer.effect(
     Accounts,
     Effect.gen(function* makeBetterAuthAccounts() {
+      const authOptions = authOptionsWith(google);
+
       const auth = yield* BetterAuth(
         secret === undefined ? authOptions : { ...authOptions, secret }
       );

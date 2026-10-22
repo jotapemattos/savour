@@ -52,6 +52,7 @@ jobs:
     env:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
       NO_COLOR: "1"
@@ -75,7 +76,7 @@ jobs:
           pnpm --filter @savour/infra exec alchemy plan --stage staging --no-input > plan.txt 2>&1
           code=$?
           echo "exit=$code" >> "$GITHUB_OUTPUT"
-          perl -pi -e 'for my $name (qw(CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN GOOGLE_PLACES_API_KEY NEON_API_KEY)) { my $value = $ENV{$name} // ""; s/\Q$value\E/***/g if length $value }' plan.txt
+          perl -pi -e 'for my $name (qw(CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN GOOGLE_CLIENT_ID GOOGLE_PLACES_API_KEY NEON_API_KEY)) { my $value = $ENV{$name} // ""; s/\Q$value\E/***/g if length $value }' plan.txt
           cat plan.txt
           exit 0
       - name: Comment the plan on the pull request
@@ -123,6 +124,7 @@ jobs:
     env:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
       NO_COLOR: "1"

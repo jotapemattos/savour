@@ -43,7 +43,10 @@ const compilePreview = (stage: string) =>
       Layer.merge(
         NodeServices.layer,
         ConfigProvider.layer(
-          ConfigProvider.fromUnknown({ GOOGLE_PLACES_API_KEY: "test-key" })
+          ConfigProvider.fromUnknown({
+            GOOGLE_CLIENT_ID: "test-client-id",
+            GOOGLE_PLACES_API_KEY: "test-key",
+          })
         )
       )
     ),
