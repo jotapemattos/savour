@@ -109,6 +109,8 @@ export {
 
 export { EditVisitInput, LogVisitInput } from "./visit-contracts.js";
 
+export { WantToGo, type WantToGoService } from "./want-to-go.js";
+
 export {
   deleteVisitAction,
   editVisitAction,

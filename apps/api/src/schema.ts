@@ -5,6 +5,7 @@ import {
   date,
   index,
   pgTable,
+  primaryKey,
   real,
   text,
   timestamp,
@@ -58,5 +59,22 @@ export const visits = pgTable(
       table.visitedOn.desc(),
       table.createdAt.desc()
     ),
+  ]
+);
+
+export const wantToGo = pgTable(
+  "want_to_go",
+  {
+    accountId: text("account_id").notNull(),
+    restaurantId: uuid("restaurant_id")
+      .notNull()
+      .references(() => restaurants.id),
+    savedAt: timestamp("saved_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.accountId, table.restaurantId] }),
+    index("want_to_go_newest").on(table.accountId, table.savedAt.desc()),
   ]
 );
