@@ -8,6 +8,10 @@ import { databaseHealthContract } from "./database-health-contracts.js";
 import { healthContract } from "./health-contracts.js";
 import { searchRestaurantsContract } from "./restaurant-search-contracts.js";
 import {
+  likeReviewContract,
+  unlikeReviewContract,
+} from "./review-like-contracts.js";
+import {
   deleteVisitContract,
   diaryContract,
   editVisitContract,
@@ -36,6 +40,12 @@ export { InvalidVisitDate } from "./invalid-visit-date.js";
 
 export { VisitNotFound } from "./visit-not-found.js";
 
+export { CannotLikeOwnReview } from "./cannot-like-own-review.js";
+
+export { NotAReview } from "./not-a-review.js";
+
+export { LikedReview } from "./review-like-contracts.js";
+
 export { EditVisitInput, LogVisitInput } from "./visit-contracts.js";
 
 export { Diary, DiaryEntry, Rating } from "./visit-schemas.js";
@@ -58,4 +68,6 @@ export const contracts = [
   editVisitContract,
   deleteVisitContract,
   diaryContract,
+  likeReviewContract,
+  unlikeReviewContract,
 ] as const;

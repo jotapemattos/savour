@@ -50,7 +50,7 @@ export const deleteVisitAction = {
   rel: "delete",
 } as const;
 
-const signedInAccountId = Effect.gen(function* signedInAccountId() {
+export const signedInAccountId = Effect.gen(function* signedInAccountId() {
   const accounts = yield* Accounts;
   const token = yield* requireSessionToken;
   const { accountId } = yield* accounts.accountForSession(token);

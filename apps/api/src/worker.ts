@@ -13,6 +13,7 @@ import { DatabaseConnection } from "./database-resources.js";
 import { googlePlaceSearch } from "./google-place-search.js";
 import { PostgresDatabase } from "./postgres-database.js";
 import { PostgresRestaurants } from "./postgres-restaurants.js";
+import { PostgresReviewLikes } from "./postgres-review-likes.js";
 import { PostgresVisits } from "./postgres-visits.js";
 
 const makeApiWorker = Effect.gen(function* makeApiWorker() {
@@ -28,7 +29,8 @@ const makeApiWorker = Effect.gen(function* makeApiWorker() {
   const database = Layer.mergeAll(
     PostgresDatabase,
     PostgresRestaurants,
-    PostgresVisits
+    PostgresVisits,
+    PostgresReviewLikes
   ).pipe(
     Layer.provide(SQL.PostgresLayer({ url: hyperdrive.connectionString }))
   );
