@@ -13,6 +13,11 @@ import {
   editVisitContract,
   logVisitContract,
 } from "./visit-contracts.js";
+import {
+  addToWantToGoContract,
+  removeFromWantToGoContract,
+  wantToGoContract,
+} from "./want-to-go-contracts.js";
 
 export { SignInInput, SignUpInput } from "./account-contracts.js";
 
@@ -40,6 +45,8 @@ export { EditVisitInput, LogVisitInput } from "./visit-contracts.js";
 
 export { Diary, DiaryEntry, Rating } from "./visit-schemas.js";
 
+export { WantToGoEntry, WantToGoList } from "./want-to-go-contracts.js";
+
 export {
   HealthReport,
   NextAction,
@@ -58,4 +65,7 @@ export const contracts = [
   editVisitContract,
   deleteVisitContract,
   diaryContract,
+  addToWantToGoContract,
+  wantToGoContract,
+  removeFromWantToGoContract,
 ] as const;

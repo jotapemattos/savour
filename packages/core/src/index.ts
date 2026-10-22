@@ -13,6 +13,11 @@ import {
   editVisit,
   logVisit,
 } from "./visit-capabilities.js";
+import {
+  addToWantToGo,
+  removeFromWantToGo,
+  wantToGo,
+} from "./want-to-go-capabilities.js";
 
 export {
   Account,
@@ -109,6 +114,21 @@ export {
 
 export { EditVisitInput, LogVisitInput } from "./visit-contracts.js";
 
+export { WantToGo, type WantToGoService } from "./want-to-go.js";
+
+export {
+  RemovedFromWantToGo,
+  SavedToWantToGo,
+  WantToGoEntry,
+  WantToGoList,
+} from "./want-to-go-contracts.js";
+
+export {
+  addToWantToGoAction,
+  readWantToGoAction,
+  removeFromWantToGoAction,
+} from "./want-to-go-capabilities.js";
+
 export {
   deleteVisitAction,
   editVisitAction,
@@ -136,4 +156,7 @@ export const capabilities = [
   editVisit,
   deleteVisit,
   diary,
+  addToWantToGo,
+  wantToGo,
+  removeFromWantToGo,
 ] as const;

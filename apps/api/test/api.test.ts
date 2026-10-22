@@ -24,6 +24,7 @@ import {
 } from "./fixtures/fake-place-search.js";
 import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
 import { memoryVisits } from "./fixtures/memory-visits.js";
+import { MemoryWantToGo } from "./fixtures/memory-want-to-go.js";
 
 const decodeHealth = Schema.decodeUnknownEffect(HealthReport);
 
@@ -55,7 +56,8 @@ const serveApi = (
       Layer.provide(Layer.succeed(Database, { selectOne })),
       Layer.provide(MemoryAccounts),
       Layer.provide(places),
-      Layer.provide(memoryVisits().layer)
+      Layer.provide(memoryVisits().layer),
+      Layer.provide(MemoryWantToGo)
     ),
     { disableListenLog: true, disableLogger: true }
   ).pipe(Layer.provideMerge(NodeHttpServer.layerTest), withTestRuntime);
