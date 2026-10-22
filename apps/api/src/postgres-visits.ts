@@ -5,12 +5,14 @@ import {
   Visits,
   currentRatingFrom,
 } from "@savour/core";
-import type { StoredVisit, VisitChanges } from "@savour/core";
+import type { Restaurant, StoredVisit, VisitChanges } from "@savour/core";
 import { and, desc, eq } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import * as PgDrizzle from "drizzle-orm/effect-postgres";
 import { Effect, Layer, Schema } from "effect";
 
+import { restaurantColumns } from "./postgres-restaurants.js";
+import type { RestaurantRow } from "./postgres-restaurants.js";
 import { restaurants, visits } from "./schema.js";
 
 const decodeVisit = Schema.decodeUnknownEffect(Visit);
@@ -55,14 +57,9 @@ const unavailable =
       Effect.mapError(() => new DatabaseUnavailable({ reason: "unreachable" }))
     );
 
-type RestaurantRow = Pick<
-  typeof restaurants.$inferSelect,
-  "id" | "placeId" | "source"
->;
-
 const storedVisitOf = (
   row: typeof visits.$inferSelect,
-  restaurant: RestaurantRow
+  restaurant: RestaurantRow | typeof Restaurant.Type
 ) =>
   decodeVisit({
     date: row.visitedOn,
@@ -92,11 +89,7 @@ export const PostgresVisits = Layer.effect(
     const storedVisits = (where: SQL | undefined) =>
       db
         .select({
-          restaurant: {
-            id: restaurants.id,
-            placeId: restaurants.placeId,
-            source: restaurants.source,
-          },
+          restaurant: restaurantColumns,
           visit: visits,
         })
         .from(visits)

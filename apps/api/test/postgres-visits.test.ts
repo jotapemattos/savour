@@ -43,6 +43,36 @@ const logOn = (date: string, rating: number | null) =>
   });
 
 describe("Postgres visits store on Drizzle", () => {
+  it.effect("reads back a visit to a user-added restaurant", () =>
+    Effect.gen(function* readsUserAdded() {
+      const restaurant = yield* Restaurants.use((store) =>
+        store.add({
+          addedBy: "ana",
+          address: "Rua X, 10, Bragança Paulista - SP",
+          name: "Bar do Zé",
+        })
+      );
+
+      const logged = yield* Visits.use((store) =>
+        store.log("account-ana", {
+          date: day("2026-10-09"),
+          dishes: [],
+          lovedIt: true,
+          rating: null,
+          restaurant,
+          review: null,
+          revisit: false,
+          tags: [],
+        })
+      );
+
+      const diary = yield* Visits.use((store) => store.diary("account-ana"));
+
+      expect(logged.restaurant).toStrictEqual(restaurant);
+      expect(diary.map(({ visit }) => visit)).toStrictEqual([logged]);
+    }).pipe(Effect.provide(VisitsOnPglite))
+  );
+
   it.effect("reads the diary newest visit date first", () =>
     Effect.gen(function* readsDiary() {
       yield* logOn("2026-10-09", 4);

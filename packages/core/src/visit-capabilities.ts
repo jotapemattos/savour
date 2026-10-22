@@ -8,6 +8,7 @@ import { InvalidVisitDate } from "./invalid-visit-date.js";
 import type { Place } from "./place-schemas.js";
 import { PlaceSearch } from "./place-search.js";
 import { Restaurants } from "./restaurants.js";
+import type { Restaurant } from "./restaurants.js";
 import {
   deleteVisitContract,
   diaryContract,
@@ -106,10 +107,18 @@ const placeOf = (
     )
   );
 
+const placeIdsOf = (restaurant: typeof Restaurant.Type) =>
+  restaurant.source === "provider" ? [restaurant.placeId] : [];
+
+const placeOfRestaurant = (restaurant: typeof Restaurant.Type) =>
+  restaurant.source === "provider"
+    ? placeOf(restaurant.placeId)
+    : Effect.succeed(null);
+
 const withPlaces = (visits: readonly (typeof Visit.Type)[]) =>
   Effect.gen(function* resolvePlaces() {
     const placeIds = [
-      ...new Set(visits.map(({ restaurant }) => restaurant.placeId)),
+      ...new Set(visits.flatMap(({ restaurant }) => placeIdsOf(restaurant))),
     ];
 
     const places = yield* Effect.forEach(placeIds, placeOf, {
@@ -122,7 +131,10 @@ const withPlaces = (visits: readonly (typeof Visit.Type)[]) =>
 
     return visits.map((visit) => ({
       ...visit,
-      place: byPlaceId.get(visit.restaurant.placeId) ?? null,
+      place:
+        visit.restaurant.source === "provider"
+          ? (byPlaceId.get(visit.restaurant.placeId) ?? null)
+          : null,
     }));
   });
 
@@ -155,7 +167,7 @@ export const logVisit = implement(logVisitContract, (input) =>
       })
     );
 
-    const place = yield* placeOf(visit.restaurant.placeId);
+    const place = yield* placeOfRestaurant(visit.restaurant);
 
     return { next: [readDiaryAction], visit: { ...visit, place } };
   })
@@ -180,7 +192,7 @@ export const editVisit = implement(
         Effect.annotateLogs({ visitId: visit.id })
       );
 
-      const place = yield* placeOf(visit.restaurant.placeId);
+      const place = yield* placeOfRestaurant(visit.restaurant);
 
       return { next: [readDiaryAction], visit: { ...visit, place } };
     })

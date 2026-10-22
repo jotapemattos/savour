@@ -73,6 +73,26 @@ describe("restaurants schema", () => {
           )
       );
 
+      const unsigned = yield* Effect.promise(
+        // oxlint-disable-next-line typescript/promise-function-async -- PGlite answers queries as native Promises.
+        () =>
+          db
+            .query(
+              "insert into restaurants (source, name, address) values ('user', 'Bar do Zé', 'Rua X, 10')"
+            )
+            .then(
+              () => "inserted",
+              () => "refused"
+            )
+      );
+
+      expect(
+        unique.rows.some(
+          ({ indexdef }) =>
+            indexdef.includes("USING gin") && indexdef.includes("gin_trgm_ops")
+        )
+      ).toBe(true);
+      expect(unsigned).toBe("refused");
       expect(
         unique.rows.some(
           ({ indexdef }) =>

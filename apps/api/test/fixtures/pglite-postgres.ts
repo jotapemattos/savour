@@ -2,6 +2,7 @@ import { NodeServices } from "@effect/platform-node";
 import { PgClient } from "@effect/sql-pg";
 import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
+import { pg_trgm as pgTrgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { Effect, FileSystem, Layer, Path, Redacted } from "effect";
 
 export const migrationsDirectory = new URL("../../migrations", import.meta.url)
@@ -12,7 +13,7 @@ export const migratedPglite = Effect.gen(function* migratePglite() {
   const path = yield* Path.Path;
 
   const db = yield* Effect.acquireRelease(
-    Effect.sync(() => new PGlite()),
+    Effect.sync(() => new PGlite({ extensions: { pg_trgm: pgTrgm } })),
     (pglite) =>
       // oxlint-disable-next-line typescript/promise-function-async -- PGlite closes through a native Promise.
       Effect.promise(() => pglite.close())

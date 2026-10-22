@@ -54,10 +54,15 @@ export { PlaceSearchUnavailable } from "./place-search-unavailable.js";
 export { PlaceSearch, type PlaceSearchService } from "./place-search.js";
 
 export {
+  ProviderRestaurant,
   Restaurant,
   Restaurants,
+  UserAddedRestaurant,
+  type NewUserAddedRestaurant,
   type RestaurantsService,
 } from "./restaurants.js";
+
+export { RestaurantNotFound } from "./restaurant-not-found.js";
 
 export {
   RestaurantSearchResults,
