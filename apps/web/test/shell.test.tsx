@@ -41,4 +41,21 @@ describe("web shell", () => {
       expect(requests).toStrictEqual(["GET /api/health", "GET /api/account"]);
     })
   );
+
+  it.live.each(["en", "pt-BR"] as const)(
+    "sets <html lang> from the %s locale",
+    (locale) =>
+      Effect.gen(function* setsDocumentLanguage() {
+        const api = scriptedApi({});
+
+        render(
+          <RouterProvider
+            router={createSavourRouter(api, memorySession(api), locale)}
+          />
+        );
+        yield* appearedStatus;
+
+        expect(document.documentElement.lang).toBe(locale);
+      })
+  );
 });
