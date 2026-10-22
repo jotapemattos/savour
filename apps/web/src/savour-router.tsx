@@ -4,12 +4,14 @@ import type { ReactNode } from "react";
 
 import type { SessionGateway } from "#/client/account-session";
 import type { ApiTransport } from "#/client/savour-api";
+import type { Locale } from "#/i18n/locale";
 
 import { routeTree } from "./routeTree.gen";
 
 export const createSavourRouter = (
   api: ApiTransport,
-  session: SessionGateway
+  session: SessionGateway,
+  locale: typeof Locale.Type = "en"
 ) => {
   const queryClient = new QueryClient();
 
@@ -19,7 +21,7 @@ export const createSavourRouter = (
         {props.children}
       </QueryClientProvider>
     ),
-    context: { api, queryClient, session },
+    context: { api, locale, queryClient, session },
     defaultPreload: "intent",
     routeTree,
     scrollRestoration: true,

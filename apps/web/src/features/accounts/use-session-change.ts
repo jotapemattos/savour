@@ -9,29 +9,24 @@ import type {
   SessionRefusal,
   Viewer,
 } from "#/client/account-session";
-
-const refusalMessages = {
-  EmailTaken: "That email already has an account. Sign in instead.",
-  HandleTaken: "That handle is taken. Try another one.",
-  InvalidCredentials:
-    "That email and password don’t match. Check both and try again.",
-} satisfies Record<SessionRefusal, string>;
+import type { Messages } from "#/i18n/en";
 
 export class SessionUnreachable extends Data.TaggedError("SessionUnreachable")<{
   readonly cause: Error;
 }> {}
 
-export const failureMessage = (error: Error) =>
+export const failureMessage = (messages: Messages["session"], error: Error) =>
   Predicate.isTagged(error, "SchemaError")
-    ? "Check the fields above and try again."
-    : "Savour couldn’t be reached. Check your connection and try again.";
+    ? messages.invalidFields
+    : messages.unreachable;
 
 export const refusalMessage = (
+  messages: Messages["session"],
   change: SessionOutcome | Viewer | undefined,
   reason: SessionRefusal
 ) =>
   Predicate.isTagged(change, "Refused") && change.reason === reason
-    ? refusalMessages[reason]
+    ? messages.refusals[reason]
     : undefined;
 
 export const changedTo = (

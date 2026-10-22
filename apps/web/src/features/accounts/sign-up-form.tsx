@@ -1,5 +1,7 @@
 import { SignUpInput } from "@savour/core/contracts";
 
+import { useMessages } from "#/i18n/messages";
+
 import { Field } from "./field";
 import { SessionForm } from "./session-form";
 import {
@@ -18,28 +20,31 @@ const signUpWith = decodedWith(
 
 export const SignUpForm = () => {
   const signUp = useSessionChange(signUpWith);
+  const { t } = useMessages();
 
   return (
     <SessionForm
       alternative={{
-        label: "Sign in",
-        prompt: "Already have an account?",
+        label: t.signUp.alternative,
+        prompt: t.signUp.alternativePrompt,
         to: "/sign-in",
       }}
-      failure={signUp.isError ? failureMessage(signUp.error) : undefined}
+      failure={
+        signUp.isError ? failureMessage(t.session, signUp.error) : undefined
+      }
       onSubmit={signUp.mutate}
       pending={signUp.isPending}
-      pendingLabel="Creating account…"
+      pendingLabel={t.signUp.pending}
       signedIn={changedTo(signUp.data, "SignedIn")}
-      submitLabel="Create account"
-      title="Create your account"
+      submitLabel={t.signUp.submit}
+      title={t.signUp.title}
     >
       <Field
         autoComplete="email"
-        error={refusalMessage(signUp.data, "EmailTaken")}
+        error={refusalMessage(t.session, signUp.data, "EmailTaken")}
         id="email"
         inputMode="email"
-        label="Email"
+        label={t.signUp.email}
         name="email"
         required
         spellCheck={false}
@@ -49,10 +54,10 @@ export const SignUpForm = () => {
         autoCapitalize="none"
         autoComplete="username"
         autoCorrect="off"
-        error={refusalMessage(signUp.data, "HandleTaken")}
-        hint="3–20 lowercase letters, numbers or underscores. People find you by it."
+        error={refusalMessage(t.session, signUp.data, "HandleTaken")}
+        hint={t.signUp.handleHint}
         id="handle"
-        label="Handle"
+        label={t.signUp.handle}
         maxLength={20}
         minLength={3}
         name="handle"
@@ -62,9 +67,9 @@ export const SignUpForm = () => {
       />
       <Field
         autoComplete="new-password"
-        hint="At least 8 characters."
+        hint={t.signUp.passwordHint}
         id="password"
-        label="Password"
+        label={t.signUp.password}
         maxLength={128}
         minLength={8}
         name="password"
