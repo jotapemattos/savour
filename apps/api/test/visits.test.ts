@@ -31,6 +31,7 @@ import {
 } from "./fixtures/fake-place-search.js";
 import { MemoryAccounts, withTestRuntime } from "./fixtures/memory-accounts.js";
 import { memoryVisits } from "./fixtures/memory-visits.js";
+import { MemoryWantToGo } from "./fixtures/memory-want-to-go.js";
 
 const TODAY = "2026-10-19";
 
@@ -71,6 +72,7 @@ const serveWith = (
       Layer.provide(MemoryAccounts),
       Layer.provide(places),
       Layer.provide(visits.layer),
+      Layer.provide(MemoryWantToGo),
       Layer.provide(
         Layer.succeed(Database, { selectOne: Effect.succeed<1>(1) })
       )

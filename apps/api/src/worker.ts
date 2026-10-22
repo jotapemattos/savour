@@ -14,6 +14,7 @@ import { googlePlaceSearch } from "./google-place-search.js";
 import { PostgresDatabase } from "./postgres-database.js";
 import { PostgresRestaurants } from "./postgres-restaurants.js";
 import { PostgresVisits } from "./postgres-visits.js";
+import { PostgresWantToGo } from "./postgres-want-to-go.js";
 
 const makeApiWorker = Effect.gen(function* makeApiWorker() {
   const { stage } = yield* Alchemy.Stack;
@@ -28,7 +29,8 @@ const makeApiWorker = Effect.gen(function* makeApiWorker() {
   const database = Layer.mergeAll(
     PostgresDatabase,
     PostgresRestaurants,
-    PostgresVisits
+    PostgresVisits,
+    PostgresWantToGo
   ).pipe(
     Layer.provide(SQL.PostgresLayer({ url: hyperdrive.connectionString }))
   );

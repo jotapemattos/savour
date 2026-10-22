@@ -78,6 +78,22 @@ expect_status "deleted visit" 404 \
   "$(status --request DELETE "${api}/visits/${visit_id}" --header "authorization: Bearer ${token}")"
 expect_status "diary" 200 \
   "$(status "${api}/diary" --header "authorization: Bearer ${token}")"
+restaurant_id="$(curl --silent --max-time 20 --request POST "${api}/want-to-go" \
+  --header "authorization: Bearer ${token}" --header 'content-type: application/json' \
+  --data "$(printf '{"placeId":"%s"}' "$place_id")" |
+  grep -o '"id":"[^"]*"' | head -n 1 | cut -d '"' -f 4)"
+
+if [[ -z "$restaurant_id" ]]; then
+  echo "FAIL add to want-to-go: no restaurant id in the answer" >&2
+  exit 1
+fi
+
+echo "ok   add to want-to-go"
+
+expect_status "want-to-go list" 200 \
+  "$(status "${api}/want-to-go" --header "authorization: Bearer ${token}")"
+expect_status "remove from want-to-go" 200 \
+  "$(status --request DELETE "${api}/want-to-go/${restaurant_id}" --header "authorization: Bearer ${token}")"
 expect_status "duplicate handle" 409 \
   "$(post_json /accounts "$(json "other+${run}@example.test" "$handle" "$password")")"
 expect_status "wrong password" 401 \
