@@ -6,7 +6,7 @@ import { searchRestaurantsContract } from "./restaurant-search-contracts.js";
 
 export const addRestaurantAction = {
   description:
-    "Add a restaurant the search missed by hand with `POST /restaurants`.",
+    "Add a restaurant the search missed by hand with `POST /restaurants`, its `name` and `address`, and the bearer token.",
   href: "/restaurants",
   rel: "create-form",
 } as const;

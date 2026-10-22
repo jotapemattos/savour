@@ -76,6 +76,10 @@ expect_status "delete a visit" 200 \
   "$(status --request DELETE "${api}/visits/${visit_id}" --header "authorization: Bearer ${token}")"
 expect_status "deleted visit" 404 \
   "$(status --request DELETE "${api}/visits/${visit_id}" --header "authorization: Bearer ${token}")"
+expect_status "add a restaurant by hand" 200 \
+  "$(status --request POST "${api}/restaurants" --header "authorization: Bearer ${token}" \
+    --header 'content-type: application/json' \
+    --data "$(printf '{"name":"%s","address":"Smoke street, %s"}' "$handle" "$run")")"
 expect_status "diary" 200 \
   "$(status "${api}/diary" --header "authorization: Bearer ${token}")"
 expect_status "duplicate handle" 409 \
